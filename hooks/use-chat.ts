@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { ChatMessage, ChatQueryResponse } from "@/lib/types";
 import { postChatQuery } from "@/lib/api";
+
+const STORAGE_KEY = "company-brain-chat";
 
 let messageCounter = 0;
 
@@ -10,9 +12,47 @@ function createId(): string {
   return `msg-${Date.now()}-${++messageCounter}`;
 }
 
+function loadMessages(): ChatMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as ChatMessage[];
+    // Filter out any loading messages that were persisted mid-flight
+    return parsed.filter((m) => !m.isLoading);
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(messages: ChatMessage[]) {
+  if (typeof window === "undefined") return;
+  try {
+    // Only persist completed messages (no loading placeholders)
+    const toSave = messages.filter((m) => !m.isLoading);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch {
+    // localStorage full or unavailable — silent fail
+  }
+}
+
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    setMessages(loadMessages());
+    setInitialized(true);
+  }, []);
+
+  // Persist to localStorage on change (skip initial empty render)
+  useEffect(() => {
+    if (initialized) {
+      saveMessages(messages);
+    }
+  }, [messages, initialized]);
 
   // Derive activeClientId from the last context_card response
   const activeClientId = (() => {
@@ -111,6 +151,7 @@ export function useChat() {
 
   const clearChat = useCallback(() => {
     setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
   }, []);
 
   return {
