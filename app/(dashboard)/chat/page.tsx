@@ -1,13 +1,35 @@
-import { PlaceholderPage } from "@/components/placeholder-page";
-import { MessageSquare } from "lucide-react";
+"use client";
+
+import { useCallback } from "react";
+import { useChat } from "@/hooks/use-chat";
+import { ChatMessageList } from "@/components/chat/chat-message-list";
+import { ChatInput } from "@/components/chat/chat-input";
 
 export default function ChatPage() {
+  const {
+    messages,
+    sendMessage,
+    clearChat,
+    isLoading,
+    activeClientId,
+    activeClientName,
+  } = useChat();
+
+  const handleClientClick = useCallback(
+    (name: string) => {
+      sendMessage(`cómo está ${name}?`);
+    },
+    [sendMessage]
+  );
+
   return (
-    <PlaceholderPage
-      title="Chat AI"
-      description="Hacé preguntas sobre cualquier cuenta en lenguaje natural."
-      icon={MessageSquare}
-      phase={3}
-    />
+    <div className="flex flex-1 flex-col">
+      <ChatMessageList messages={messages} onClientClick={handleClientClick} />
+      <ChatInput
+        onSend={sendMessage}
+        isLoading={isLoading}
+        activeClientName={activeClientName}
+      />
+    </div>
   );
 }

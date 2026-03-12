@@ -101,3 +101,40 @@ export interface ContactsResponse {
 export type HealthRange = "all" | "healthy" | "stable" | "at_risk" | "critical";
 export type SortField = "name" | "health_score" | "mrr";
 export type SortDirection = "asc" | "desc";
+
+// Chat types
+export interface ChatClientSummary {
+  id: string;
+  name: string;
+  industry: string | null;
+  lifecycle_stage: string | null;
+  health_score: number | null;
+  mrr: number | null;
+}
+
+export interface ChatQueryRequest {
+  question: string;
+  conversation_history: { role: "user" | "assistant"; content: string }[];
+  client_id: string | null;
+}
+
+export type ChatResponseType = "context_card" | "client_list" | "text" | "help";
+
+export interface ChatQueryResponse {
+  response_type: ChatResponseType;
+  context_card: ContextCard | null;
+  client: ChatClientSummary | null;
+  clients: ChatClientSummary[] | null;
+  summary: string | null;
+  answer: string | null;
+  sources: string[];
+  resolved_intent: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  response?: ChatQueryResponse;
+  isLoading?: boolean;
+}

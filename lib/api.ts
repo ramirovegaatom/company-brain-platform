@@ -1,4 +1,4 @@
-import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse } from "./types";
+import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse, ChatQueryRequest, ChatQueryResponse } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -73,5 +73,12 @@ export function getClientContacts(
 ): Promise<ContactsResponse> {
   return fetchApi(`/api/v1/clients/${id}/contacts`, {
     signal: options?.signal,
+  });
+}
+
+export function postChatQuery(request: ChatQueryRequest): Promise<ChatQueryResponse> {
+  return fetchApi("/api/v1/query/", {
+    method: "POST",
+    body: JSON.stringify(request),
   });
 }
