@@ -10,7 +10,11 @@ class ApiError extends Error {
 }
 
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  // Ensure trailing slash before query string to avoid FastAPI 307 redirects
+  const [pathname, qs] = path.split("?");
+  const slashed = pathname.endsWith("/") ? pathname : pathname + "/";
+  const normalizedPath = qs ? `${slashed}?${qs}` : slashed;
+  const res = await fetch(`${API_URL}${normalizedPath}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
