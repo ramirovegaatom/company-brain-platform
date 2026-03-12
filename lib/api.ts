@@ -10,11 +10,7 @@ class ApiError extends Error {
 }
 
 async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
-  // Ensure trailing slash before query string to avoid FastAPI 307 redirects
-  const [pathname, qs] = path.split("?");
-  const slashed = pathname.endsWith("/") ? pathname : pathname + "/";
-  const normalizedPath = qs ? `${slashed}?${qs}` : slashed;
-  const res = await fetch(`${API_URL}${normalizedPath}`, {
+  const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -39,7 +35,7 @@ export function getClients(params?: {
   if (params?.offset) searchParams.set("offset", String(params.offset));
   if (params?.search) searchParams.set("search", params.search);
   const qs = searchParams.toString();
-  return fetchApi(`/api/v1/clients${qs ? `?${qs}` : ""}`);
+  return fetchApi(`/api/v1/clients/${qs ? `?${qs}` : ""}`);
 }
 
 export function getClient(id: string): Promise<Client> {
