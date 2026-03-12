@@ -61,3 +61,43 @@ export interface ContextCard {
   generated_at: string;
   justification: string;
 }
+
+// Signals endpoint
+export interface Signal {
+  id: string;
+  client_id: string;
+  type: string;
+  subtype: string;
+  score: number;
+  detected_at: string;
+  source: string;
+  description: string | null;
+  is_acknowledged: boolean;
+  metadata: Record<string, unknown>;
+}
+
+export interface SignalsResponse {
+  signals: Signal[];
+  total: number;
+}
+
+// Contacts endpoint
+export interface Contact {
+  id: string;
+  client_id: string;
+  name: string;
+  email: string | null;
+  role: string | null;
+  decision_power: string | null;
+  is_champion: boolean;
+}
+
+export interface ContactsResponse {
+  contacts: Contact[];
+  total: number;
+}
+
+// Filter types
+export type HealthRange = "all" | "healthy" | "stable" | "at_risk" | "critical";
+export type SortField = "name" | "health_score" | "mrr";
+export type SortDirection = "asc" | "desc";
