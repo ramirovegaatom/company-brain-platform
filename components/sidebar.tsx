@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Brain, MessageSquare, Users, BarChart3 } from "lucide-react";
+import { Brain, MessageSquare, Users, BarChart3, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/chat", label: "Chat AI", icon: MessageSquare },
   { href: "/accounts", label: "Accounts", icon: Users },
   { href: "/dashboards", label: "Dashboards", icon: BarChart3 },
+  { href: "/data-map", label: "Data Map", icon: Network },
 ];
 
 export function Sidebar() {
