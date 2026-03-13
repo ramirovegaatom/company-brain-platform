@@ -7,6 +7,7 @@ import {
   KNOWLEDGE_SOURCES,
   STUB_SOURCES,
   PLANNED_SOURCES,
+  CENTRAL_DATABASE,
   PROCESSING_STEPS,
   OUTPUTS,
 } from "@/lib/architecture-data";
@@ -19,7 +20,7 @@ interface DetailPanelProps {
 type AnyNode = SourceNode | ProcessingNode | OutputNode;
 
 function findNode(id: string): { node: AnyNode; type: "source" | "processing" | "output" } | null {
-  const allSources = [...DATA_SOURCES, ...KNOWLEDGE_SOURCES, ...STUB_SOURCES, ...PLANNED_SOURCES];
+  const allSources = [...DATA_SOURCES, ...KNOWLEDGE_SOURCES, ...STUB_SOURCES, ...PLANNED_SOURCES, CENTRAL_DATABASE];
   const source = allSources.find((n) => n.id === id);
   if (source) return { node: source, type: "source" };
 

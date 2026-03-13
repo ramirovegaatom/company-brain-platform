@@ -292,6 +292,32 @@ export const PLANNED_SOURCES: SourceNode[] = [
   },
 ];
 
+// ── Central Database ───────────────────────────────────
+
+export const CENTRAL_DATABASE: SourceNode = {
+  id: "supabase",
+  name: "Supabase (PostgreSQL)",
+  icon: Database,
+  status: "active",
+  description: "Central database — clients, signals, patterns, knowledge base, similarities",
+  category: "adapter",
+  stats: {
+    "Tables": "30+",
+    "Clients": "1,395",
+    "Signals": "~1,900",
+    "KB Entries": "89",
+    "Similarity Pairs": "44,058",
+    "Pattern Matches": "27",
+  },
+  details: [
+    "Tables: clients, contacts, signals, patterns, pattern_matches, knowledge_base",
+    "Tables: client_similarities, client_flows, call_summaries, csm_interactions",
+    "Tables: entity_aliases, contact_interactions",
+    "Region: us-east-1, Project ID: btyezocjiqlbkmsmmwtn",
+    "Org: Atom (Supabase dashboard)",
+  ],
+};
+
 // ── Processing Steps ───────────────────────────────────
 
 export const PROCESSING_STEPS: ProcessingNode[] = [
