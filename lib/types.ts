@@ -138,3 +138,66 @@ export interface ChatMessage {
   response?: ChatQueryResponse;
   isLoading?: boolean;
 }
+
+// Dashboard types
+export interface HealthBucket {
+  label: string;
+  min_score: number;
+  max_score: number;
+  count: number;
+  mrr: number;
+}
+
+export interface LifecycleBucket {
+  stage: string;
+  count: number;
+  avg_health: number | null;
+  mrr: number;
+}
+
+export interface SignalWeekBucket {
+  week: string;
+  positive: number;
+  negative: number;
+  net_score: number;
+}
+
+export interface PatternHeatmapEntry {
+  pattern_name: string;
+  pattern_type: string;
+  count: number;
+  avg_confidence: number;
+  top_clients: { id: string; name: string }[];
+}
+
+export interface TopRiskSignal {
+  subtype: string;
+  score: number;
+  description: string | null;
+}
+
+export interface TopRiskClient {
+  id: string;
+  name: string;
+  health_score: number | null;
+  mrr: number | null;
+  lifecycle_stage: string | null;
+  patterns: string[];
+  top_signals: TopRiskSignal[];
+}
+
+export interface DashboardSummary {
+  total_clients: number;
+  total_mrr: number;
+  mrr_at_risk: number;
+  count_critical: number;
+  count_at_risk: number;
+  count_stable: number;
+  count_healthy: number;
+  health_distribution: HealthBucket[];
+  lifecycle_distribution: LifecycleBucket[];
+  signal_trends: SignalWeekBucket[];
+  pattern_heatmap: PatternHeatmapEntry[];
+  top_risks: TopRiskClient[];
+  generated_at: string;
+}

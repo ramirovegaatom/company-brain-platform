@@ -1,4 +1,4 @@
-import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse, ChatQueryRequest, ChatQueryResponse } from "./types";
+import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse, ChatQueryRequest, ChatQueryResponse, DashboardSummary } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -81,4 +81,8 @@ export function postChatQuery(request: ChatQueryRequest): Promise<ChatQueryRespo
     method: "POST",
     body: JSON.stringify(request),
   });
+}
+
+export function getDashboardSummary(): Promise<DashboardSummary> {
+  return fetchApi("/api/v1/dashboard/summary");
 }
