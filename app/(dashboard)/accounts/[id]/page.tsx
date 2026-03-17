@@ -14,6 +14,7 @@ import { AdoptionSnapshot } from "@/components/accounts/adoption-snapshot";
 import { CampaignTable } from "@/components/accounts/campaign-table";
 import { ConversationMetrics } from "@/components/accounts/conversation-metrics";
 import { CallHistory } from "@/components/accounts/call-history";
+import { AccountDataMap } from "@/components/accounts/account-data-map";
 import { useClientDetail } from "@/hooks/use-client-detail";
 
 export default function AccountDetailPage({
@@ -91,6 +92,7 @@ export default function AccountDetailPage({
           <TabsTrigger value="contacts">
             Contacts{contacts.length > 0 ? ` (${contacts.length})` : ""}
           </TabsTrigger>
+          <TabsTrigger value="data-map">Data Map</TabsTrigger>
         </TabsList>
 
         <TabsContent value="intelligence" className="space-y-4 mt-4">
@@ -131,6 +133,10 @@ export default function AccountDetailPage({
 
         <TabsContent value="contacts" className="mt-4">
           <ContactsList contacts={contacts} />
+        </TabsContent>
+
+        <TabsContent value="data-map" className="mt-4">
+          <AccountDataMap client={client} />
         </TabsContent>
       </Tabs>
     </div>

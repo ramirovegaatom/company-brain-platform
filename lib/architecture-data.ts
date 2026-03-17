@@ -406,6 +406,7 @@ export const PROCESSING_STEPS: ProcessingNode[] = [
       "6 parallel DB queries (Phase 1) + 2 parallel (Phase 2)",
       "Context Card agent: max 3 tool rounds (search_knowledge, similar_client, call_insights, past_interactions)",
       "Portfolio Q&A agent: max 3 tool rounds (query_clients, aggregate, signals, client_detail, call_summaries, search_knowledge)",
+      "Frontend merges metadata from all client entries (BQ + Vitally + manual) for complete view",
       "In-memory TTL cache (5min default), bypass for eval",
     ],
   },
