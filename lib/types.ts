@@ -139,6 +139,24 @@ export interface ChatMessage {
   isLoading?: boolean;
 }
 
+// Call Summaries
+export interface CallSummary {
+  call_id: string;
+  call_date: string;
+  duration_seconds: number | null;
+  ai_score: number | null;
+  summary: string;
+  topics: string[];
+  detected_themes: Record<string, unknown>;
+  participants_internal: string[];
+  participants_external: string[];
+}
+
+export interface CallSummariesResponse {
+  summaries: CallSummary[];
+  total: number;
+}
+
 // Dashboard types
 export interface HealthBucket {
   label: string;

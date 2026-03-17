@@ -4,10 +4,16 @@ import { use } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClientHeader } from "@/components/accounts/client-header";
+import { KpiHeroBar } from "@/components/accounts/kpi-hero-bar";
 import { ContextCardView } from "@/components/accounts/context-card-view";
 import { SignalsList } from "@/components/accounts/signals-list";
 import { PatternMatches } from "@/components/accounts/pattern-matches";
 import { ContactsList } from "@/components/accounts/contacts-list";
+import { UsageSection } from "@/components/accounts/usage-section";
+import { AdoptionSnapshot } from "@/components/accounts/adoption-snapshot";
+import { CampaignTable } from "@/components/accounts/campaign-table";
+import { ConversationMetrics } from "@/components/accounts/conversation-metrics";
+import { CallHistory } from "@/components/accounts/call-history";
 import { useClientDetail } from "@/hooks/use-client-detail";
 
 export default function AccountDetailPage({
@@ -21,11 +27,15 @@ export default function AccountDetailPage({
     signals,
     contacts,
     contextCard,
+    callSummaries,
     isLoading,
     isLoadingContext,
+    isLoadingCalls,
     contextError,
+    callsError,
     error,
     retryContext,
+    loadCallSummaries,
   } = useClientDetail(id);
 
   if (error) {
@@ -45,7 +55,7 @@ export default function AccountDetailPage({
         <Skeleton className="h-10 w-80" />
         <div className="grid grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-lg" />
+            <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
         <Skeleton className="h-64" />
@@ -60,18 +70,30 @@ export default function AccountDetailPage({
         healthTrend={contextCard?.health_trend}
       />
 
-      <Tabs defaultValue="overview" className="w-full">
+      <KpiHeroBar client={client} healthTrend={contextCard?.health_trend} />
+
+      <Tabs
+        defaultValue="intelligence"
+        className="w-full"
+        onValueChange={(value) => {
+          if (value === "calls") loadCallSummaries();
+        }}
+      >
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="intelligence">Intelligence</TabsTrigger>
+          <TabsTrigger value="operations">Operations</TabsTrigger>
+          <TabsTrigger value="calls">
+            Calls{client.metadata?.total_calls_30d ? ` (${client.metadata.total_calls_30d})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="signals">
-            Signals{signals.length > 0 && ` (${signals.length})`}
+            Signals{signals.length > 0 ? ` (${signals.length})` : ""}
           </TabsTrigger>
           <TabsTrigger value="contacts">
-            Contacts{contacts.length > 0 && ` (${contacts.length})`}
+            Contacts{contacts.length > 0 ? ` (${contacts.length})` : ""}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4 mt-4">
+        <TabsContent value="intelligence" className="space-y-4 mt-4">
           <ContextCardView
             contextCard={contextCard}
             isLoading={isLoadingContext}
@@ -84,6 +106,23 @@ export default function AccountDetailPage({
               <PatternMatches patterns={contextCard.pattern_matches} />
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="operations" className="space-y-4 mt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <UsageSection metadata={client.metadata || {}} />
+            <AdoptionSnapshot metadata={client.metadata || {}} />
+          </div>
+          <CampaignTable metadata={client.metadata || {}} />
+          <ConversationMetrics metadata={client.metadata || {}} />
+        </TabsContent>
+
+        <TabsContent value="calls" className="mt-4">
+          <CallHistory
+            summaries={callSummaries}
+            isLoading={isLoadingCalls}
+            error={callsError}
+          />
         </TabsContent>
 
         <TabsContent value="signals" className="mt-4">
