@@ -20,31 +20,49 @@ interface UseClientsResult {
   error: string | null;
 }
 
-/** Merge duplicate clients (same name, different sources). Keeps the richest entry. */
+/** Merge duplicate clients (same name, different sources).
+ * Keeps the entry with highest MRR as base, but merges metadata from ALL entries.
+ * This ensures BQ fields (conversaciones_contratadas) combine with Vitally fields (conversaciones_actuales). */
 function deduplicateClients(clients: Client[]): Client[] {
-  const byName = new Map<string, Client>();
+  const byName = new Map<string, Client[]>();
 
+  // Group by name
   for (const c of clients) {
     const key = c.name.trim().toUpperCase();
-    const existing = byName.get(key);
-
-    if (!existing) {
-      byName.set(key, c);
-      continue;
-    }
-
-    // Score: prefer higher MRR, then higher health, then more metadata
-    const existingScore = (existing.mrr || 0) * 1000 + (existing.health_score || 0) * 10 +
-      Object.keys(existing.metadata || {}).length;
-    const newScore = (c.mrr || 0) * 1000 + (c.health_score || 0) * 10 +
-      Object.keys(c.metadata || {}).length;
-
-    if (newScore > existingScore) {
-      byName.set(key, c);
-    }
+    const group = byName.get(key) || [];
+    group.push(c);
+    byName.set(key, group);
   }
 
-  return Array.from(byName.values());
+  // Merge each group
+  return Array.from(byName.values()).map((group) => {
+    if (group.length === 1) return group[0];
+
+    // Sort by richness: highest MRR > more metadata > higher health
+    group.sort((a, b) => {
+      const aScore = (a.mrr || 0) * 1000 + Object.keys(a.metadata || {}).length * 10 + (a.health_score || 0);
+      const bScore = (b.mrr || 0) * 1000 + Object.keys(b.metadata || {}).length * 10 + (b.health_score || 0);
+      return bScore - aScore;
+    });
+
+    // Base = richest entry
+    const base = { ...group[0] };
+
+    // Merge metadata from all entries (base wins on conflicts)
+    const mergedMeta: Record<string, unknown> = {};
+    // Apply in reverse order so richest entry's values win
+    for (let i = group.length - 1; i >= 0; i--) {
+      const meta = group[i].metadata || {};
+      for (const [key, value] of Object.entries(meta)) {
+        if (value !== null && value !== undefined && value !== 0 && value !== "") {
+          mergedMeta[key] = value;
+        }
+      }
+    }
+    base.metadata = mergedMeta;
+
+    return base;
+  });
 }
 
 export function useClients(params: UseClientsParams): UseClientsResult {

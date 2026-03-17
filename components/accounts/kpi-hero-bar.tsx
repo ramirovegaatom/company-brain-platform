@@ -3,7 +3,7 @@
 import { DollarSign, Activity, Phone, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getHealthColor } from "@/lib/health-utils";
-import { getNum, formatPercent } from "@/lib/metadata-utils";
+import { getNum, formatPercent, formatNumber } from "@/lib/metadata-utils";
 import type { Client, HealthTrend } from "@/lib/types";
 
 interface KpiHeroBarProps {
@@ -41,6 +41,14 @@ export function KpiHeroBar({ client, healthTrend }: KpiHeroBarProps) {
   const prevMonth = getNum(meta, "consumo_mes_anterior_porcentaje");
   const calls30d = getNum(meta, "total_calls_30d");
 
+  // Calculate utilization from raw fields if ratio not available
+  const planConvs = getNum(meta, "plan_conversaciones") ?? getNum(meta, "conversaciones_contratadas");
+  const actualConvs = getNum(meta, "conversaciones_actuales") ?? getNum(meta, "conversations_started");
+  const calculatedUtil = planConvs && planConvs > 0 && actualConvs !== null
+    ? actualConvs / planConvs
+    : null;
+  const effectiveUtil = utilization ?? calculatedUtil ?? prevMonth;
+
   const trendLabel = healthTrend === "improving" ? "improving" : healthTrend === "declining" ? "declining" : "stable";
   const healthColors = getHealthColor(health);
 
@@ -55,12 +63,17 @@ export function KpiHeroBar({ client, healthTrend }: KpiHeroBarProps) {
       <KpiCard
         icon={<Activity className="size-5" />}
         label="Utilization"
-        value={formatPercent(utilization ?? prevMonth)}
-        sub={utilization !== null ? undefined : prevMonth !== null ? "prev month" : undefined}
+        value={formatPercent(effectiveUtil)}
+        sub={
+          utilization !== null ? undefined
+          : calculatedUtil !== null ? `${formatNumber(actualConvs)} / ${formatNumber(planConvs)}`
+          : prevMonth !== null ? "prev month"
+          : undefined
+        }
         colorClass={
-          (utilization ?? prevMonth) !== null && (utilization ?? prevMonth)! < 0.5
+          effectiveUtil !== null && effectiveUtil < 0.5
             ? "text-amber-400"
-            : (utilization ?? prevMonth) !== null && (utilization ?? prevMonth)! > 0.9
+            : effectiveUtil !== null && effectiveUtil > 0.9
             ? "text-emerald-400"
             : undefined
         }
