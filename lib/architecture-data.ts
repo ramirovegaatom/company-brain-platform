@@ -135,7 +135,7 @@ export const DATA_SOURCES: SourceNode[] = [
     name: "Adoption Intelligence",
     icon: Cpu,
     status: "active",
-    description: "Feature adoption & use case analysis from Pedro's dataset",
+    description: "Feature adoption, use cases & campaign metrics from Pedro's dataset",
     category: "adapter",
     capabilities: ["GENERATE_SIGNALS"],
     signalSubtypes: [
@@ -154,10 +154,11 @@ export const DATA_SOURCES: SourceNode[] = [
       { name: "empty_funnel_top", score: -3 },
       { name: "hubspot_integration_active", score: 3 },
     ],
-    stats: { "Signals generated": "343", "BQ project": "atom-ai-playground" },
+    stats: { "Signals generated": "343", "BQ project": "atom-ai-playground", "Top campaigns": "per client" },
     details: [
       "Table: company_insights.companies_info (361 active, weekly)",
       "Table: company_insights.company_use_cases_outbound (398 companies)",
+      "Top 5 campaigns per client with delivery/read/answered/sales metrics",
       "Categories: Adquisición, Remarketing, Cobranzas, etc.",
     ],
   },
@@ -181,13 +182,15 @@ export const DATA_SOURCES: SourceNode[] = [
     ],
     stats: {
       "Total calls": "22,661",
-      "Summaries analyzed": "2,068",
+      "Summaries analyzed": "2,429",
+      "SPICED extracted": "~2,190",
       "Entity match rate": "~86%",
     },
     details: [
       "Table: company_insights.modjo_calls (BQ atom-ai-playground)",
       "Matching: email → contacts → domain fallback → account name",
       "AI scoring: 0-100, 29% coverage. Avg call: 44min",
+      "SPICED extraction: Situation, Pain, Impact, Critical Event, Decision",
     ],
   },
   {
@@ -214,6 +217,35 @@ export const DATA_SOURCES: SourceNode[] = [
       "Table: conversational_ai_lab.first_30_messages_last_30_days",
       "Metrics: inbound/outbound %, bot/human handled %, avg messages",
       "Bulk query with UNNEST for handling detection",
+    ],
+  },
+  {
+    id: "conversation-logs",
+    name: "Conversation Logs",
+    icon: MessageCircle,
+    status: "active",
+    description: "Granular conversation data — 5.9M conversations per lead with events",
+    category: "adapter",
+    capabilities: ["GENERATE_SIGNALS"],
+    signalSubtypes: [
+      { name: "conversation_volume_drop", score: -4 },
+      { name: "conversation_volume_spike", score: 3 },
+      { name: "low_funnel_progression", score: -3 },
+      { name: "high_funnel_progression", score: 4 },
+      { name: "high_no_response_rate", score: -5 },
+      { name: "low_engagement_depth", score: -3 },
+      { name: "high_bot_dependency", score: -2 },
+      { name: "no_recent_conversations", score: -6 },
+    ],
+    stats: {
+      "Conversations": "5.9M",
+      "BQ project": "atom-ai-playground",
+    },
+    details: [
+      "Table: company_insights.conversation_logs_history",
+      "One row per lead with full event history (messages, stages, tags)",
+      "Metrics: funnel progression, no-response rate, engagement depth, distinct flows",
+      "Reuses Adoption Intelligence credentials",
     ],
   },
 ];
@@ -247,48 +279,42 @@ export const KNOWLEDGE_SOURCES: SourceNode[] = [
       "Parsing rules for flow_parser.py",
     ],
   },
-];
-
-export const STUB_SOURCES: SourceNode[] = [
   {
-    id: "hubspot",
-    name: "HubSpot",
+    id: "hubspot-tickets",
+    name: "HubSpot Tickets",
     icon: CreditCard,
-    status: "stub",
-    description: "CRM data — code exists but not yet configured",
-    category: "adapter",
-    capabilities: ["SYNC_CLIENTS", "SYNC_CONTACTS", "GENERATE_SIGNALS"],
-    details: ["Adapter code exists in codebase", "Needs API key configuration"],
+    status: "active",
+    description: "17K support tickets → 93 support patterns by module & category",
+    category: "knowledge",
+    stats: { "Entries": "93", "Source tickets": "17,000" },
+    details: [
+      "Claude Haiku classified and summarized tickets by module × category",
+      "Includes churn alert patterns (100 tickets) and critical incidents (1,201)",
+      "Categories: support_pattern. Surfaced automatically by KB search",
+    ],
   },
 ];
+
+export const STUB_SOURCES: SourceNode[] = [];
 
 export const PLANNED_SOURCES: SourceNode[] = [
   {
-    id: "slack-interno",
-    name: "Slack Interno",
-    icon: MessageSquare,
-    status: "planned",
-    description: "Internal team conversations and escalations",
-    category: "adapter",
-    details: ["CSM conversations about clients", "Escalation patterns"],
-  },
-  {
-    id: "asana",
-    name: "Asana",
-    icon: ListChecks,
-    status: "planned",
-    description: "Project tickets and task tracking",
-    category: "adapter",
-    details: ["Client-related tickets", "Implementation progress"],
-  },
-  {
-    id: "atio",
-    name: "Atio",
+    id: "attio",
+    name: "Attio (CRM)",
     icon: Globe,
     status: "planned",
-    description: "Platform usage and product telemetry",
+    description: "CRM context — deals, buying roles, pipeline stages",
     category: "adapter",
-    details: ["Direct platform usage data", "Feature adoption metrics"],
+    details: ["Contacts, deals, buying roles from Attio CRM", "Waiting for API credentials from Marcos"],
+  },
+  {
+    id: "intercom",
+    name: "Intercom",
+    icon: MessageSquare,
+    status: "planned",
+    description: "Support tickets — replacing HubSpot tickets (~Apr/May 2026)",
+    category: "adapter",
+    details: ["Real-time ticket signals + incremental KB feeding", "When migration from HubSpot completes"],
   },
 ];
 
@@ -303,11 +329,12 @@ export const CENTRAL_DATABASE: SourceNode = {
   category: "adapter",
   stats: {
     "Tables": "30+",
-    "Clients": "1,395",
-    "Signals": "~1,900",
-    "KB Entries": "89",
+    "Clients": "1,000+",
+    "Signals": "~2,100",
+    "KB Entries": "182",
+    "Call Summaries": "2,429",
     "Similarity Pairs": "44,058",
-    "Pattern Matches": "27",
+    "Pattern Matches": "20",
   },
   details: [
     "Tables: clients, contacts, signals, patterns, pattern_matches, knowledge_base",
@@ -325,7 +352,7 @@ export const PROCESSING_STEPS: ProcessingNode[] = [
     id: "signals",
     name: "Signal Generation",
     icon: Zap,
-    metric: "~1,900 signals",
+    metric: "~2,100 signals",
     description: "Scored events from all adapters, -10 to +10",
     details: [
       "7-day dedup window per client/subtype",
@@ -342,19 +369,19 @@ export const PROCESSING_STEPS: ProcessingNode[] = [
     details: [
       "Patterns: churn_risk, expansion, success, stall, nps_crisis, silent_churn, renewal_risk, adoption_gap",
       "Confidence scoring with thresholds",
-      "27 active pattern matches",
+      "20 active pattern matches",
     ],
   },
   {
     id: "health",
     name: "Health Scoring",
     icon: Brain,
-    metric: "1,395 clients",
+    metric: "1,000 clients",
     description: "Weighted composite score with temporal decay",
     details: [
       "Weights: usage 30%, engagement 25%, contract 20%, support 15%, patterns 10%",
       "Temporal decay: linear 100% → 10% over 90 days (DECAY_FLOOR=0.1)",
-      "Distribution: 655 stable, 330 at_risk, 15 critical",
+      "Distribution: 650 stable, 343 at_risk, 7 critical",
     ],
   },
   {
@@ -377,7 +404,8 @@ export const PROCESSING_STEPS: ProcessingNode[] = [
     description: "Parallel async assembly with Claude agent loop",
     details: [
       "6 parallel DB queries (Phase 1) + 2 parallel (Phase 2)",
-      "Claude agent: max 3 tool rounds (search_knowledge, get_similar_client_detail, search_past_interactions)",
+      "Context Card agent: max 3 tool rounds (search_knowledge, similar_client, call_insights, past_interactions)",
+      "Portfolio Q&A agent: max 3 tool rounds (query_clients, aggregate, signals, client_detail, call_summaries, search_knowledge)",
       "In-memory TTL cache (5min default), bypass for eval",
     ],
   },
@@ -398,13 +426,13 @@ export const OUTPUTS: OutputNode[] = [
     name: "Chat AI",
     icon: Bot,
     description: "Natural language queries about any client or portfolio",
-    destination: "Platform",
+    destination: "Platform + Slack",
   },
   {
     id: "slack-bot",
     name: "Slack Bot",
     icon: MessageSquare,
-    description: "/brain commands + @Company Brain mentions",
+    description: "/brain commands + @mention NL with 6 tools + thread follow-ups",
     destination: "Slack workspace",
   },
   {
@@ -429,8 +457,8 @@ export const INGESTION_STEPS = [
 
 export const SUMMARY_STATS = {
   activeSources: DATA_SOURCES.length + KNOWLEDGE_SOURCES.length,
-  totalClients: 1395,
-  totalSignals: "~1,900",
-  kbEntries: 89,
+  totalClients: 1000,
+  totalSignals: "~2,100",
+  kbEntries: 182,
   syncSchedule: "Daily 9AM ART",
 };
