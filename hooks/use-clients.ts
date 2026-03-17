@@ -20,6 +20,33 @@ interface UseClientsResult {
   error: string | null;
 }
 
+/** Merge duplicate clients (same name, different sources). Keeps the richest entry. */
+function deduplicateClients(clients: Client[]): Client[] {
+  const byName = new Map<string, Client>();
+
+  for (const c of clients) {
+    const key = c.name.trim().toUpperCase();
+    const existing = byName.get(key);
+
+    if (!existing) {
+      byName.set(key, c);
+      continue;
+    }
+
+    // Score: prefer higher MRR, then higher health, then more metadata
+    const existingScore = (existing.mrr || 0) * 1000 + (existing.health_score || 0) * 10 +
+      Object.keys(existing.metadata || {}).length;
+    const newScore = (c.mrr || 0) * 1000 + (c.health_score || 0) * 10 +
+      Object.keys(c.metadata || {}).length;
+
+    if (newScore > existingScore) {
+      byName.set(key, c);
+    }
+  }
+
+  return Array.from(byName.values());
+}
+
 export function useClients(params: UseClientsParams): UseClientsResult {
   const [allClients, setAllClients] = useState<Client[]>([]);
   const [total, setTotal] = useState(0);
@@ -34,8 +61,10 @@ export function useClients(params: UseClientsParams): UseClientsResult {
     getAllClients()
       .then((res) => {
         if (!cancelled) {
-          setAllClients(res.clients);
-          setTotal(res.total);
+          // Deduplicate by name — keep the entry with richest data (highest MRR, then health)
+          const deduped = deduplicateClients(res.clients);
+          setAllClients(deduped);
+          setTotal(deduped.length);
         }
       })
       .catch((err) => {
