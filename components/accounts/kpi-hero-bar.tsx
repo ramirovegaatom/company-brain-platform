@@ -38,6 +38,7 @@ export function KpiHeroBar({ client, healthTrend }: KpiHeroBarProps) {
   const health = client.health_score;
 
   const utilization = getNum(meta, "conversaciones_actuales_vs_plan");
+  const prevMonth = getNum(meta, "consumo_mes_anterior_porcentaje");
   const calls30d = getNum(meta, "total_calls_30d");
 
   const trendLabel = healthTrend === "improving" ? "improving" : healthTrend === "declining" ? "declining" : "stable";
@@ -54,9 +55,15 @@ export function KpiHeroBar({ client, healthTrend }: KpiHeroBarProps) {
       <KpiCard
         icon={<Activity className="size-5" />}
         label="Utilization"
-        value={formatPercent(utilization)}
-        sub={utilization !== null && utilization < 0.5 ? "below pace" : undefined}
-        colorClass={utilization !== null && utilization < 0.5 ? "text-amber-400" : utilization !== null && utilization > 0.9 ? "text-emerald-400" : undefined}
+        value={formatPercent(utilization ?? prevMonth)}
+        sub={utilization !== null ? undefined : prevMonth !== null ? "prev month" : undefined}
+        colorClass={
+          (utilization ?? prevMonth) !== null && (utilization ?? prevMonth)! < 0.5
+            ? "text-amber-400"
+            : (utilization ?? prevMonth) !== null && (utilization ?? prevMonth)! > 0.9
+            ? "text-emerald-400"
+            : undefined
+        }
       />
       <KpiCard
         icon={<Phone className="size-5" />}
