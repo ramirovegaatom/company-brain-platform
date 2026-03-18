@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { Client, Signal, Contact, ContextCard, CallSummary } from "@/lib/types";
-import { getClient, getClientSignals, getClientContacts, getClientContext, getClientCallSummaries } from "@/lib/api";
+import { getClient, getClients, getClientSignals, getClientContacts, getClientContext, getClientCallSummaries } from "@/lib/api";
 
 interface UseClientDetailResult {
   client: Client | null;
@@ -48,12 +48,41 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
       getClientSignals(clientId, { days: 90, limit: 50, signal: controller.signal }),
       getClientContacts(clientId, { signal: controller.signal }),
     ])
-      .then(([clientData, signalsData, contactsData]) => {
-        if (!cancelled) {
-          setClient(clientData);
-          setSignals(signalsData.signals);
-          setContacts(contactsData.contacts);
+      .then(async ([clientData, signalsData, contactsData]) => {
+        if (cancelled) return;
+
+        // Merge metadata from all variants of this client (BQ + Vitally + manual)
+        try {
+          const variants = await getClients({ search: clientData.name, limit: 10 });
+          const sameNameClients = variants.clients.filter(
+            (c) => c.name.trim().toUpperCase() === clientData.name.trim().toUpperCase()
+          );
+          if (sameNameClients.length > 1) {
+            const mergedMeta: Record<string, unknown> = {};
+            // Apply all variants, primary client wins on conflicts
+            for (const variant of sameNameClients) {
+              if (variant.id === clientData.id) continue;
+              for (const [key, value] of Object.entries(variant.metadata || {})) {
+                if (value !== null && value !== undefined && value !== 0 && value !== "") {
+                  mergedMeta[key] = value;
+                }
+              }
+            }
+            // Primary client's metadata overwrites
+            for (const [key, value] of Object.entries(clientData.metadata || {})) {
+              if (value !== null && value !== undefined && value !== 0 && value !== "") {
+                mergedMeta[key] = value;
+              }
+            }
+            clientData = { ...clientData, metadata: mergedMeta };
+          }
+        } catch {
+          // Silently fail — use single client metadata
         }
+
+        setClient(clientData);
+        setSignals(signalsData.signals);
+        setContacts(contactsData.contacts);
       })
       .catch((err) => {
         if (!cancelled && err.name !== "AbortError") {
