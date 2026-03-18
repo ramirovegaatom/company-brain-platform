@@ -19,29 +19,21 @@ interface AccountFlowViewProps {
 
 // Source nodes with their display config
 const SOURCES = [
-  { id: "vitally", color: "purple" as const, statFn: (m: Record<string, unknown>) => {
-    const h = m.vitally_health_score;
-    return h !== null && h !== undefined ? `Health: ${h}/10` : undefined;
-  }},
-  { id: "bigquery", color: "blue" as const, statFn: (m: Record<string, unknown>) => {
+  { id: "atom_hub", color: "blue" as const, statFn: (m: Record<string, unknown>) => {
     const c = m.conversations_started;
     return c ? `${Number(c).toLocaleString()} convs` : undefined;
   }},
-  { id: "adoption", color: "cyan" as const, statFn: (m: Record<string, unknown>) => {
-    const b = m.bots_conectados;
-    return b ? `${b} bots` : undefined;
+  { id: "vitally_csm", color: "purple" as const, statFn: (m: Record<string, unknown>) => {
+    const mrr = m.total_mrr || m.mrr;
+    return mrr ? `MRR: $${Number(mrr).toLocaleString()}` : undefined;
+  }},
+  { id: "crm_hub", color: "blue" as const, statFn: (m: Record<string, unknown>) => {
+    const deals = m.crm_associated_deals;
+    return deals ? `${deals} deals` : undefined;
   }},
   { id: "modjo", color: "amber" as const, statFn: (m: Record<string, unknown>) => {
     const c = m.total_calls_30d;
     return c ? `${c} calls (30d)` : undefined;
-  }},
-  { id: "labs", color: "cyan" as const, statFn: (m: Record<string, unknown>) => {
-    const c = m.labs_total_conversations_30d;
-    return c ? `${Number(c).toLocaleString()} convs` : undefined;
-  }},
-  { id: "conv_logs", color: "emerald" as const, statFn: (m: Record<string, unknown>) => {
-    const c = m.conv_logs_total_30d;
-    return c ? `${Number(c).toLocaleString()} convs` : undefined;
   }},
   { id: "intercom", color: "purple" as const, statFn: (m: Record<string, unknown>) => {
     const c = m.intercom_convs_30d;
