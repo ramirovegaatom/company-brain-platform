@@ -1,4 +1,4 @@
-import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse, CallSummariesResponse, ChatQueryRequest, ChatQueryResponse, DashboardSummary } from "./types";
+import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse, CallSummariesResponse, ChatQueryRequest, ChatQueryResponse, DashboardSummary, HealthBreakdown } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -93,6 +93,15 @@ export function postChatQuery(request: ChatQueryRequest): Promise<ChatQueryRespo
   return fetchApi("/api/v1/query/", {
     method: "POST",
     body: JSON.stringify(request),
+  });
+}
+
+export function getClientHealth(
+  id: string,
+  options?: { signal?: AbortSignal }
+): Promise<HealthBreakdown> {
+  return fetchApi(`/api/v1/clients/${id}/health`, {
+    signal: options?.signal,
   });
 }
 

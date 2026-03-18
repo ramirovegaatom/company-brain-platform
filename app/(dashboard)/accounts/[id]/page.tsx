@@ -15,6 +15,7 @@ import { CampaignTable } from "@/components/accounts/campaign-table";
 import { ConversationMetrics } from "@/components/accounts/conversation-metrics";
 import { CallHistory } from "@/components/accounts/call-history";
 import { AccountDataMap } from "@/components/accounts/account-data-map";
+import { HealthBreakdown } from "@/components/accounts/health-breakdown";
 import { useClientDetail } from "@/hooks/use-client-detail";
 
 export default function AccountDetailPage({
@@ -29,9 +30,11 @@ export default function AccountDetailPage({
     contacts,
     contextCard,
     callSummaries,
+    healthBreakdown,
     isLoading,
     isLoadingContext,
     isLoadingCalls,
+    isLoadingHealth,
     contextError,
     callsError,
     error,
@@ -72,6 +75,8 @@ export default function AccountDetailPage({
       />
 
       <KpiHeroBar client={client} healthTrend={contextCard?.health_trend} />
+
+      <HealthBreakdown breakdown={healthBreakdown} isLoading={isLoadingHealth} />
 
       <Tabs
         defaultValue="intelligence"

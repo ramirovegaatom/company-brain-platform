@@ -157,6 +157,27 @@ export interface CallSummariesResponse {
   total: number;
 }
 
+// Health Breakdown
+export interface HealthCategory {
+  category: string;
+  score: number;
+  weight: number;
+  weighted_score: number;
+}
+
+export interface HealthFactor {
+  signal: string;
+  impact: number;
+}
+
+export interface HealthBreakdown {
+  score: number;
+  trend: HealthTrend;
+  categories: HealthCategory[];
+  top_risk_factors: HealthFactor[];
+  top_positive_factors: HealthFactor[];
+}
+
 // Dashboard types
 export interface HealthBucket {
   label: string;

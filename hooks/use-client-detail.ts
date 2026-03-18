@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Client, Signal, Contact, ContextCard, CallSummary } from "@/lib/types";
-import { getClient, getClients, getClientSignals, getClientContacts, getClientContext, getClientCallSummaries } from "@/lib/api";
+import type { Client, Signal, Contact, ContextCard, CallSummary, HealthBreakdown } from "@/lib/types";
+import { getClient, getClients, getClientSignals, getClientContacts, getClientContext, getClientCallSummaries, getClientHealth } from "@/lib/api";
 
 interface UseClientDetailResult {
   client: Client | null;
@@ -10,9 +10,11 @@ interface UseClientDetailResult {
   contacts: Contact[];
   contextCard: ContextCard | null;
   callSummaries: CallSummary[];
+  healthBreakdown: HealthBreakdown | null;
   isLoading: boolean;
   isLoadingContext: boolean;
   isLoadingCalls: boolean;
+  isLoadingHealth: boolean;
   contextError: string | null;
   callsError: string | null;
   error: string | null;
@@ -26,9 +28,11 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [contextCard, setContextCard] = useState<ContextCard | null>(null);
   const [callSummaries, setCallSummaries] = useState<CallSummary[]>([]);
+  const [healthBreakdown, setHealthBreakdown] = useState<HealthBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [isLoadingCalls, setIsLoadingCalls] = useState(false);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [contextError, setContextError] = useState<string | null>(null);
   const [callsError, setCallsError] = useState<string | null>(null);
@@ -42,6 +46,19 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
     setError(null);
 
     const controller = new AbortController();
+
+    // Health breakdown in parallel (independent, doesn't block main load)
+    setIsLoadingHealth(true);
+    getClientHealth(clientId, { signal: controller.signal })
+      .then((data) => {
+        if (!cancelled) setHealthBreakdown(data);
+      })
+      .catch(() => {
+        // Silently fail — health breakdown is supplementary
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingHealth(false);
+      });
 
     Promise.all([
       getClient(clientId),
@@ -169,9 +186,11 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
     contacts,
     contextCard,
     callSummaries,
+    healthBreakdown,
     isLoading,
     isLoadingContext,
     isLoadingCalls,
+    isLoadingHealth,
     contextError,
     callsError,
     error,
