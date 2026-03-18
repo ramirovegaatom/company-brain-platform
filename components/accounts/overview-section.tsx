@@ -3,13 +3,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import {
   Building2,
   CreditCard,
   BarChart3,
   HeadphonesIcon,
   AlertTriangle,
+  Database,
 } from "lucide-react";
 import { getNum, formatNumber, formatPercent, formatMoney } from "@/lib/metadata-utils";
+import { FIELD_SOURCES, type FieldSource } from "@/lib/field-sources";
 import { cn } from "@/lib/utils";
 
 interface OverviewSectionProps {
@@ -17,21 +25,82 @@ interface OverviewSectionProps {
   mrr: number | null;
 }
 
+// Build a lookup map: field name → FieldSource
+const FIELD_MAP = new Map<string, FieldSource>();
+for (const f of FIELD_SOURCES) {
+  FIELD_MAP.set(f.field, f);
+}
+
+function SourceTooltipContent({ field }: { field: string }) {
+  const src = FIELD_MAP.get(field);
+  if (!src) return <span>Source: unknown</span>;
+
+  const d = src.sourceDetail;
+  return (
+    <div className="space-y-1 max-w-xs">
+      <div className="font-medium">{src.label}</div>
+      <div className={cn("text-xs", src.sourceColor)}>
+        {src.source}
+      </div>
+      {d.project && (
+        <div className="text-xs opacity-80">
+          {d.project}.{d.dataset}.{d.table}
+          {d.column && <span className="opacity-60"> → {d.column}</span>}
+        </div>
+      )}
+      {d.apiEndpoint && (
+        <div className="text-xs opacity-80">{d.apiEndpoint}</div>
+      )}
+      {d.notes && (
+        <div className="text-xs opacity-60 italic">{d.notes}</div>
+      )}
+    </div>
+  );
+}
+
 function StatRow({
   label,
   value,
   sub,
   alert,
+  field,
 }: {
   label: string;
   value: string | null;
   sub?: string;
   alert?: boolean;
+  field?: string; // metadata field name for source lookup
 }) {
   if (value === null || value === undefined || value === "—") return null;
+
+  const hasSrc = field && FIELD_MAP.has(field);
+
+  const labelEl = (
+    <span className={cn(
+      "text-sm text-muted-foreground",
+      hasSrc && "border-b border-dotted border-muted-foreground/40 cursor-help"
+    )}>
+      {label}
+    </span>
+  );
+
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm text-muted-foreground">{label}</span>
+      {hasSrc ? (
+        <Tooltip>
+          <TooltipTrigger className="text-left">
+            <span className="inline-flex items-center gap-1">
+              <Database className="size-3 text-muted-foreground/40" />
+              {labelEl}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="left" align="start" className="max-w-xs">
+            <SourceTooltipContent field={field!} />
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        labelEl
+      )}
       <div className="text-right">
         <span className={cn("text-sm font-medium", alert && "text-red-400")}>
           {value}
@@ -101,8 +170,8 @@ export function OverviewSection({ metadata, mrr }: OverviewSectionProps) {
   // Experience
   const totalCalls30d = getNum(m, "total_calls_30d");
   const intercomConvs = getNum(m, "intercom_convs_30d");
-  const lastCalendar = m.last_calendar_interaction as string | undefined;
-  const lastEmail = m.last_email_interaction as string | undefined;
+  const lastCalendar = (m.last_calendar_interaction || m.crm_last_calendar_interaction) as string | undefined;
+  const lastEmail = (m.last_email_interaction || m.crm_last_email_interaction) as string | undefined;
 
   const utilizationPct =
     utilization !== null
@@ -126,161 +195,148 @@ export function OverviewSection({ metadata, mrr }: OverviewSectionProps) {
     periodEnds;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* Info Core */}
-      <SectionCard icon={Building2} title="Info Core">
-        <StatRow label="Plan" value={plan || null} />
-        <StatRow label="MRR" value={mrr ? formatMoney(mrr) : null} />
-        <StatRow label="Industry" value={industry || null} />
-        <StatRow label="Country" value={country || null} />
-        <StatRow label="ICP Tier" value={icpTier || null} />
-        <StatRow label="CSM" value={assignedCsm || null} />
-        <StatRow label="AE" value={assignedAe || null} />
-        <StatRow label="Partner" value={partnerName || null} />
-        {!plan && !assignedCsm && !icpTier && (
-          <p className="text-sm text-muted-foreground py-2">
-            Sin datos de perfil disponibles.
-          </p>
-        )}
-      </SectionCard>
+    <TooltipProvider>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Info Core */}
+        <SectionCard icon={Building2} title="Info Core">
+          <StatRow label="Plan" value={plan || null} field="plan" />
+          <StatRow label="MRR" value={mrr ? formatMoney(mrr) : null} field="mrr" />
+          <StatRow label="Industry" value={industry || null} field="industry" />
+          <StatRow label="Country" value={country || null} field="country" />
+          <StatRow label="ICP Tier" value={icpTier || null} field="icp_tier" />
+          <StatRow label="CSM" value={assignedCsm || null} field="assigned_csm" />
+          <StatRow label="AE" value={assignedAe || null} field="assigned_ae" />
+          <StatRow label="Partner" value={partnerName || null} field="partner_name" />
+          <StatRow label="Contexto" value={m.contexto_empresa as string || null} field="contexto_empresa" />
+          {!plan && !assignedCsm && !icpTier && (
+            <p className="text-sm text-muted-foreground py-2">
+              Sin datos de perfil disponibles.
+            </p>
+          )}
+        </SectionCard>
 
-      {/* Finance */}
-      <SectionCard icon={CreditCard} title="Finance">
-        {hasFinanceData ? (
-          <>
-            {facturadoPlan !== null && (
-              <StatRow
-                label="Facturado Plan"
-                value={formatMoney(facturadoPlan)}
-              />
-            )}
-            {excedente !== null && excedente > 0 && (
-              <StatRow
-                label="Excedente Mes Anterior"
-                value={formatMoney(excedente)}
-              />
-            )}
-            {costoExcedentes !== null && costoExcedentes > 0 && (
-              <StatRow
-                label="Costo Excedentes"
-                value={formatMoney(costoExcedentes)}
-              />
-            )}
-            {facturasVencidas !== null && facturasVencidas > 0 && (
-              <StatRow
-                label="Facturas Vencidas"
-                value={`${facturasVencidas}`}
-                sub={
-                  montoVencidas ? `($${formatNumber(montoVencidas)})` : undefined
-                }
-                alert
-              />
-            )}
-            {facturasVencidas !== null && facturasVencidas === 0 && (
-              <StatRow label="Facturas Vencidas" value="0" sub="✓ al día" />
-            )}
-            {periodEnds && (
-              <StatRow label="Fin Periodo Actual" value={periodEnds} />
-            )}
-            {churnRazon && (
-              <div className="mt-2 rounded-md bg-red-400/10 border border-red-400/20 p-2">
-                <div className="flex items-center gap-1.5 text-xs text-red-400 font-medium mb-1">
-                  <AlertTriangle className="size-3" /> Churn Alert
+        {/* Finance */}
+        <SectionCard icon={CreditCard} title="Finance">
+          {hasFinanceData ? (
+            <>
+              {facturadoPlan !== null && (
+                <StatRow label="Facturado Plan" value={formatMoney(facturadoPlan)} field="facturado_plan" />
+              )}
+              {excedente !== null && excedente > 0 && (
+                <StatRow label="Excedente Mes Anterior" value={formatMoney(excedente)} field="facturado_excedente_mes_anterior" />
+              )}
+              {costoExcedentes !== null && costoExcedentes > 0 && (
+                <StatRow label="Costo Excedentes" value={formatMoney(costoExcedentes)} />
+              )}
+              {facturasVencidas !== null && facturasVencidas > 0 && (
+                <StatRow
+                  label="Facturas Vencidas"
+                  value={`${facturasVencidas}`}
+                  sub={montoVencidas ? `($${formatNumber(montoVencidas)})` : undefined}
+                  alert
+                  field="facturas_vencidas"
+                />
+              )}
+              {facturasVencidas !== null && facturasVencidas === 0 && (
+                <StatRow label="Facturas Vencidas" value="0" sub="al dia" field="facturas_vencidas" />
+              )}
+              {periodEnds && (
+                <StatRow label="Fin Periodo Actual" value={periodEnds} field="current_period_ends_at" />
+              )}
+              {churnRazon && (
+                <div className="mt-2 rounded-md bg-red-400/10 border border-red-400/20 p-2">
+                  <div className="flex items-center gap-1.5 text-xs text-red-400 font-medium mb-1">
+                    <AlertTriangle className="size-3" /> Churn Alert
+                  </div>
+                  <p className="text-xs text-muted-foreground">{churnRazon}</p>
+                  {churnOportunidades && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Oportunidades: {churnOportunidades}
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground">{churnRazon}</p>
-                {churnOportunidades && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Oportunidades: {churnOportunidades}
-                  </p>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground py-2">
-            Sin datos financieros disponibles.
-          </p>
-        )}
-      </SectionCard>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground py-2">
+              Sin datos financieros disponibles.
+            </p>
+          )}
+        </SectionCard>
 
-      {/* Usage */}
-      <SectionCard icon={BarChart3} title="Usage">
-        {planConvs !== null && (
-          <StatRow label="Plan" value={formatNumber(planConvs)} sub="convs" />
-        )}
-        {currentConvs !== null && (
-          <StatRow label="Actuales" value={formatNumber(currentConvs)} />
-        )}
-        {utilizationPct !== null && (
-          <>
-            <StatRow label="Utilización" value={`${utilizationPct.toFixed(0)}%`} />
-            <div className="space-y-1 pb-1">
-              <Progress
-                value={Math.min(utilizationPct, 100)}
-                className="h-2"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>0%</span>
-                <span className={cn("font-medium", utilizationColor)}>
-                  {utilizationPct.toFixed(0)}%
-                </span>
-                <span>100%</span>
+        {/* Usage */}
+        <SectionCard icon={BarChart3} title="Usage">
+          {planConvs !== null && (
+            <StatRow label="Plan" value={formatNumber(planConvs)} sub="convs" field="plan_conversaciones" />
+          )}
+          {currentConvs !== null && (
+            <StatRow label="Actuales" value={formatNumber(currentConvs)} field="conversaciones_actuales" />
+          )}
+          {utilizationPct !== null && (
+            <>
+              <StatRow label="Utilizacion" value={`${utilizationPct.toFixed(0)}%`} field="conversaciones_actuales_vs_plan" />
+              <div className="space-y-1 pb-1">
+                <Progress value={Math.min(utilizationPct, 100)} className="h-2" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0%</span>
+                  <span className={cn("font-medium", utilizationColor)}>
+                    {utilizationPct.toFixed(0)}%
+                  </span>
+                  <span>100%</span>
+                </div>
               </div>
-            </div>
-          </>
-        )}
-        {util3m !== null && (
-          <StatRow
-            label="Utilización 3M"
-            value={formatPercent(util3m <= 1 ? util3m : util3m / 100)}
-          />
-        )}
-        {projectedRevenue !== null && (
-          <StatRow label="Revenue Proy." value={formatMoney(projectedRevenue)} />
-        )}
-        {abandonment !== null && (
-          <StatRow label="Tasa Abandono" value={formatPercent(abandonment)} />
-        )}
-        {nds !== null && (
-          <StatRow label="NDS" value={formatPercent(nds)} />
-        )}
-        {activeUsers !== null && (
-          <StatRow label="Usuarios Activos" value={formatNumber(activeUsers)} />
-        )}
-        {convStarted !== null && (
-          <StatRow
-            label="Convs Started"
-            value={formatNumber(convStarted)}
-            sub="snapshot"
-          />
-        )}
-        {planConvs === null && currentConvs === null && convStarted === null && (
-          <p className="text-sm text-muted-foreground py-2">
-            Sin datos de consumo disponibles.
-          </p>
-        )}
-      </SectionCard>
+            </>
+          )}
+          {util3m !== null && (
+            <StatRow
+              label="Utilizacion 3M"
+              value={formatPercent(util3m <= 1 ? util3m : util3m / 100)}
+              field="conversaciones_vs_plan_3m"
+            />
+          )}
+          {projectedRevenue !== null && (
+            <StatRow label="Revenue Proy." value={formatMoney(projectedRevenue)} field="revenue_proyectado" />
+          )}
+          {abandonment !== null && (
+            <StatRow label="Tasa Abandono" value={formatPercent(abandonment)} field="tasa_abandono" />
+          )}
+          {nds !== null && (
+            <StatRow label="NDS" value={formatPercent(nds)} field="nds_pct" />
+          )}
+          {activeUsers !== null && (
+            <StatRow label="Usuarios Activos" value={formatNumber(activeUsers)} field="total_active_users" />
+          )}
+          {convStarted !== null && (
+            <StatRow label="Convs Started" value={formatNumber(convStarted)} sub="snapshot" field="conversations_started" />
+          )}
+          {planConvs === null && currentConvs === null && convStarted === null && (
+            <p className="text-sm text-muted-foreground py-2">
+              Sin datos de consumo disponibles.
+            </p>
+          )}
+        </SectionCard>
 
-      {/* Experience */}
-      <SectionCard icon={HeadphonesIcon} title="Experience">
-        {totalCalls30d !== null && (
-          <StatRow label="Calls (30d)" value={formatNumber(totalCalls30d)} />
-        )}
-        {intercomConvs !== null && (
-          <StatRow label="Support Convs (30d)" value={formatNumber(intercomConvs)} />
-        )}
-        {lastCalendar && (
-          <StatRow label="Last Calendar" value={lastCalendar} />
-        )}
-        {lastEmail && (
-          <StatRow label="Last Email" value={lastEmail} />
-        )}
-        {!totalCalls30d && !intercomConvs && !lastCalendar && !lastEmail && (
-          <p className="text-sm text-muted-foreground py-2">
-            Sin datos de experiencia disponibles.
-          </p>
-        )}
-      </SectionCard>
-    </div>
+        {/* Experience */}
+        <SectionCard icon={HeadphonesIcon} title="Experience">
+          {totalCalls30d !== null && (
+            <StatRow label="Calls (30d)" value={formatNumber(totalCalls30d)} field="total_calls_30d" />
+          )}
+          {intercomConvs !== null && (
+            <StatRow label="Support Convs (30d)" value={formatNumber(intercomConvs)} field="intercom_convs_30d" />
+          )}
+          {lastCalendar && (
+            <StatRow label="Last Calendar" value={lastCalendar} field="crm_last_calendar_interaction" />
+          )}
+          {lastEmail && (
+            <StatRow label="Last Email" value={lastEmail} field="crm_last_email_interaction" />
+          )}
+          {!totalCalls30d && !intercomConvs && !lastCalendar && !lastEmail && (
+            <p className="text-sm text-muted-foreground py-2">
+              Sin datos de experiencia disponibles.
+            </p>
+          )}
+        </SectionCard>
+      </div>
+    </TooltipProvider>
   );
 }
