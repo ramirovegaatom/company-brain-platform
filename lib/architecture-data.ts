@@ -329,7 +329,7 @@ export const CENTRAL_DATABASE: SourceNode = {
   category: "adapter",
   stats: {
     "Tables": "30+",
-    "Clients": "1,000+",
+    "Clients": "1,418",
     "Signals": "~2,100",
     "KB Entries": "182",
     "Call Summaries": "2,429",
@@ -376,7 +376,7 @@ export const PROCESSING_STEPS: ProcessingNode[] = [
     id: "health",
     name: "Health Scoring",
     icon: Brain,
-    metric: "1,000 clients",
+    metric: "1,418 clients",
     description: "Weighted composite score with temporal decay",
     details: [
       "Weights: usage 30%, engagement 25%, contract 20%, support 15%, patterns 10%",
