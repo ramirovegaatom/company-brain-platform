@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, TrendingUp, ArrowRight, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HealthBadge } from "./health-badge";
-import type { Client, HealthTrend } from "@/lib/types";
+import type { Client, HealthTrend, HealthBreakdown } from "@/lib/types";
 import {
   formatLifecycleLabel,
   getLifecycleColor,
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 interface ClientHeaderProps {
   client: Client;
   healthTrend?: HealthTrend;
+  healthBreakdown?: HealthBreakdown | null;
 }
 
 function TrendIcon({ trend }: { trend?: HealthTrend }) {
@@ -29,7 +30,7 @@ function TrendIcon({ trend }: { trend?: HealthTrend }) {
   }
 }
 
-export function ClientHeader({ client, healthTrend }: ClientHeaderProps) {
+export function ClientHeader({ client, healthTrend, healthBreakdown }: ClientHeaderProps) {
   const router = useRouter();
 
   return (
@@ -74,7 +75,7 @@ export function ClientHeader({ client, healthTrend }: ClientHeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <HealthBadge score={client.health_score} />
+          <HealthBadge score={healthBreakdown?.score ?? client.health_score} />
           <TrendIcon trend={healthTrend} />
         </div>
       </div>

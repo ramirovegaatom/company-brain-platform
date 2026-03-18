@@ -4,11 +4,12 @@ import { DollarSign, Activity, Phone, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getHealthColor } from "@/lib/health-utils";
 import { getNum, formatPercent, formatNumber } from "@/lib/metadata-utils";
-import type { Client, HealthTrend } from "@/lib/types";
+import type { Client, HealthTrend, HealthBreakdown } from "@/lib/types";
 
 interface KpiHeroBarProps {
   client: Client;
   healthTrend?: HealthTrend;
+  healthBreakdown?: HealthBreakdown | null;
 }
 
 interface KpiCardProps {
@@ -32,10 +33,12 @@ function KpiCard({ icon, label, value, sub, colorClass }: KpiCardProps) {
   );
 }
 
-export function KpiHeroBar({ client, healthTrend }: KpiHeroBarProps) {
+export function KpiHeroBar({ client, healthTrend, healthBreakdown }: KpiHeroBarProps) {
   const meta = client.metadata || {};
   const mrr = client.mrr;
-  const health = client.health_score;
+  // Prefer live-computed score from breakdown over stale DB value
+  const health = healthBreakdown?.score ?? client.health_score;
+  const effectiveTrend = healthBreakdown?.trend ?? healthTrend;
 
   const utilization = getNum(meta, "conversaciones_actuales_vs_plan");
   const calls30d = getNum(meta, "total_calls_30d");
@@ -48,7 +51,7 @@ export function KpiHeroBar({ client, healthTrend }: KpiHeroBarProps) {
     : null;
   const effectiveUtil = utilization ?? calculatedUtil;
 
-  const trendLabel = healthTrend === "improving" ? "improving" : healthTrend === "declining" ? "declining" : "stable";
+  const trendLabel = effectiveTrend === "improving" ? "improving" : effectiveTrend === "declining" ? "declining" : "stable";
   const healthColors = getHealthColor(health);
 
   return (

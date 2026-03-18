@@ -72,9 +72,10 @@ export default function AccountDetailPage({
       <ClientHeader
         client={client}
         healthTrend={contextCard?.health_trend}
+        healthBreakdown={healthBreakdown}
       />
 
-      <KpiHeroBar client={client} healthTrend={contextCard?.health_trend} />
+      <KpiHeroBar client={client} healthTrend={contextCard?.health_trend} healthBreakdown={healthBreakdown} />
 
       <HealthBreakdown breakdown={healthBreakdown} isLoading={isLoadingHealth} />
 
