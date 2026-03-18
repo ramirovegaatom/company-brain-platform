@@ -14,6 +14,7 @@ import { AdoptionSnapshot } from "@/components/accounts/adoption-snapshot";
 import { CampaignTable } from "@/components/accounts/campaign-table";
 import { ConversationMetrics } from "@/components/accounts/conversation-metrics";
 import { CallHistory } from "@/components/accounts/call-history";
+import { SupportHistory } from "@/components/accounts/support-history";
 import { AccountDataMap } from "@/components/accounts/account-data-map";
 import { HealthBreakdown } from "@/components/accounts/health-breakdown";
 import { useClientDetail } from "@/hooks/use-client-detail";
@@ -31,15 +32,19 @@ export default function AccountDetailPage({
     contextCard,
     callSummaries,
     healthBreakdown,
+    supportData,
     isLoading,
     isLoadingContext,
     isLoadingCalls,
     isLoadingHealth,
+    isLoadingSupport,
     contextError,
     callsError,
+    supportError,
     error,
     retryContext,
     loadCallSummaries,
+    loadSupport,
   } = useClientDetail(id);
 
   if (error) {
@@ -84,11 +89,15 @@ export default function AccountDetailPage({
         className="w-full"
         onValueChange={(value) => {
           if (value === "calls") loadCallSummaries();
+          if (value === "support") loadSupport();
         }}
       >
         <TabsList>
           <TabsTrigger value="intelligence">Intelligence</TabsTrigger>
           <TabsTrigger value="operations">Operations</TabsTrigger>
+          <TabsTrigger value="support">
+            Support{client.metadata?.intercom_convs_30d ? ` (${client.metadata.intercom_convs_30d})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="calls">
             Calls{client.metadata?.total_calls_30d ? ` (${client.metadata.total_calls_30d})` : ""}
           </TabsTrigger>
@@ -123,6 +132,14 @@ export default function AccountDetailPage({
           </div>
           <CampaignTable metadata={client.metadata || {}} />
           <ConversationMetrics metadata={client.metadata || {}} />
+        </TabsContent>
+
+        <TabsContent value="support" className="mt-4">
+          <SupportHistory
+            data={supportData}
+            isLoading={isLoadingSupport}
+            error={supportError}
+          />
         </TabsContent>
 
         <TabsContent value="calls" className="mt-4">

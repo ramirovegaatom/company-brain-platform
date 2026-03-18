@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Client, Signal, Contact, ContextCard, CallSummary, HealthBreakdown } from "@/lib/types";
-import { getClient, getClients, getClientSignals, getClientContacts, getClientContext, getClientCallSummaries, getClientHealth } from "@/lib/api";
+import type { Client, Signal, Contact, ContextCard, CallSummary, HealthBreakdown, SupportSummary } from "@/lib/types";
+import { getClient, getClients, getClientSignals, getClientContacts, getClientContext, getClientCallSummaries, getClientHealth, getClientSupport } from "@/lib/api";
 
 interface UseClientDetailResult {
   client: Client | null;
@@ -11,15 +11,19 @@ interface UseClientDetailResult {
   contextCard: ContextCard | null;
   callSummaries: CallSummary[];
   healthBreakdown: HealthBreakdown | null;
+  supportData: SupportSummary | null;
   isLoading: boolean;
   isLoadingContext: boolean;
   isLoadingCalls: boolean;
   isLoadingHealth: boolean;
+  isLoadingSupport: boolean;
   contextError: string | null;
   callsError: string | null;
+  supportError: string | null;
   error: string | null;
   retryContext: () => void;
   loadCallSummaries: () => void;
+  loadSupport: () => void;
 }
 
 export function useClientDetail(clientId: string): UseClientDetailResult {
@@ -36,8 +40,12 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
   const [error, setError] = useState<string | null>(null);
   const [contextError, setContextError] = useState<string | null>(null);
   const [callsError, setCallsError] = useState<string | null>(null);
+  const [supportData, setSupportData] = useState<SupportSummary | null>(null);
+  const [isLoadingSupport, setIsLoadingSupport] = useState(false);
+  const [supportError, setSupportError] = useState<string | null>(null);
   const [contextRetry, setContextRetry] = useState(0);
   const [callsRequested, setCallsRequested] = useState(false);
+  const [supportRequested, setSupportRequested] = useState(false);
 
   // Fast path: client + signals + contacts in parallel
   useEffect(() => {
@@ -176,9 +184,42 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
     };
   }, [clientId, callsRequested]);
 
+  // Lazy path: support conversations (loaded on demand when Support tab is opened)
+  useEffect(() => {
+    if (!supportRequested) return;
+
+    let cancelled = false;
+    setIsLoadingSupport(true);
+    setSupportError(null);
+
+    const controller = new AbortController();
+
+    getClientSupport(clientId, { days: 90, limit: 30, signal: controller.signal })
+      .then((data) => {
+        if (!cancelled) setSupportData(data);
+      })
+      .catch((err) => {
+        if (!cancelled && err.name !== "AbortError") {
+          setSupportError(err.message);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingSupport(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [clientId, supportRequested]);
+
   const loadCallSummaries = useCallback(() => {
     if (!callsRequested) setCallsRequested(true);
   }, [callsRequested]);
+
+  const loadSupport = useCallback(() => {
+    if (!supportRequested) setSupportRequested(true);
+  }, [supportRequested]);
 
   return {
     client,
@@ -187,14 +228,18 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
     contextCard,
     callSummaries,
     healthBreakdown,
+    supportData,
     isLoading,
     isLoadingContext,
     isLoadingCalls,
     isLoadingHealth,
+    isLoadingSupport,
     contextError,
     callsError,
+    supportError,
     error,
     retryContext: () => setContextRetry((n) => n + 1),
     loadCallSummaries,
+    loadSupport,
   };
 }

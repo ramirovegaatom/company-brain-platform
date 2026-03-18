@@ -157,6 +157,50 @@ export interface CallSummariesResponse {
   total: number;
 }
 
+// Intercom Support
+export interface IntercomConversation {
+  id: string;
+  conversation_id: string;
+  client_id: string;
+  state: string;
+  subject: string | null;
+  body: string | null;
+  category: string | null;
+  module: string | null;
+  issue_type: string | null;
+  sentiment: string | null;
+  churn_alert: boolean;
+  churn_reason: string | null;
+  solution: string | null;
+  ai_participated: boolean;
+  resolution_state: string | null;
+  priority: string | null;
+  tags: string[];
+  csat_rating: number | null;
+  csat_remark: string | null;
+  time_to_first_reply_sec: number | null;
+  time_to_resolution_sec: number | null;
+  count_reopens: number;
+  count_parts: number;
+  assignee_name: string | null;
+  team_name: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  conversation_url: string | null;
+  created_at: string;
+  closed_at: string | null;
+}
+
+export interface SupportSummary {
+  conversations: IntercomConversation[];
+  total: number;
+  open: number;
+  avg_resolution_sec: number | null;
+  avg_csat: number | null;
+  sentiment_distribution: Record<string, number>;
+  top_modules: [string, number][];
+}
+
 // Health Breakdown
 export interface HealthCategory {
   category: string;

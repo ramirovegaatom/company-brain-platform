@@ -1,4 +1,4 @@
-import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse, CallSummariesResponse, ChatQueryRequest, ChatQueryResponse, DashboardSummary, HealthBreakdown } from "./types";
+import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse, CallSummariesResponse, ChatQueryRequest, ChatQueryResponse, DashboardSummary, HealthBreakdown, SupportSummary } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -101,6 +101,19 @@ export function getClientHealth(
   options?: { signal?: AbortSignal }
 ): Promise<HealthBreakdown> {
   return fetchApi(`/api/v1/clients/${id}/health`, {
+    signal: options?.signal,
+  });
+}
+
+export function getClientSupport(
+  id: string,
+  options?: { days?: number; limit?: number; signal?: AbortSignal }
+): Promise<SupportSummary> {
+  const params = new URLSearchParams();
+  if (options?.days) params.set("days", String(options.days));
+  if (options?.limit) params.set("limit", String(options.limit));
+  const qs = params.toString();
+  return fetchApi(`/api/v1/clients/${id}/support${qs ? `?${qs}` : ""}`, {
     signal: options?.signal,
   });
 }
