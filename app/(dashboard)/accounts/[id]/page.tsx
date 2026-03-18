@@ -142,7 +142,7 @@ export default function AccountDetailPage({
         </TabsContent>
 
         <TabsContent value="data-map" className="mt-4">
-          <AccountDataMap client={client} />
+          <AccountDataMap client={client} signals={signals} />
         </TabsContent>
       </Tabs>
     </div>

@@ -9,100 +9,11 @@ import {
   OUTPUTS,
 } from "@/lib/architecture-data";
 import { FlowNode } from "./flow-node";
+import { FlowConnector, FlowLabel, aroundPositions } from "./flow-shared";
 
 interface FlowViewProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
-}
-
-// ── SVG Connector ──────────────────────────────────────
-
-function FlowConnector({
-  fromXs,
-  toXs,
-  height = 80,
-  color = "text-emerald-500/25",
-}: {
-  fromXs: number[];
-  toXs: number[];
-  height?: number;
-  color?: string;
-}) {
-  const paths: string[] = [];
-
-  if (toXs.length === 1) {
-    // Converge: many → 1 center
-    const cx = toXs[0];
-    for (const x of fromXs) {
-      if (x === cx) {
-        paths.push(`M${x},0 L${x},${height}`);
-      } else {
-        paths.push(`M${x},0 Q${x},${height * 0.55} ${cx},${height}`);
-      }
-    }
-  } else if (fromXs.length === 1) {
-    // Diverge: 1 center → many
-    const cx = fromXs[0];
-    for (const x of toXs) {
-      if (x === cx) {
-        paths.push(`M${x},0 L${x},${height}`);
-      } else {
-        paths.push(`M${cx},0 Q${cx},${height * 0.45} ${x},${height}`);
-      }
-    }
-  } else {
-    // Fan: merge at center then split
-    const mid = height / 2;
-    for (const x of fromXs) {
-      paths.push(`M${x},0 Q${x},${mid * 0.6} 500,${mid}`);
-    }
-    for (const x of toXs) {
-      paths.push(`M500,${mid} Q500,${mid + mid * 0.4} ${x},${height}`);
-    }
-  }
-
-  return (
-    <svg
-      className={`w-full ${color}`}
-      style={{ height: `${height}px` }}
-      viewBox={`0 0 1000 ${height}`}
-      preserveAspectRatio="none"
-      aria-hidden
-    >
-      {paths.map((d, i) => (
-        <path
-          key={i}
-          d={d}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeDasharray="6 4"
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-    </svg>
-  );
-}
-
-// ── Flow Label ─────────────────────────────────────────
-
-function FlowLabel({ text }: { text: string }) {
-  return (
-    <div className="flex items-center justify-center gap-3 py-1.5">
-      <span className="h-px w-12 bg-muted-foreground/20" />
-      <span className="text-[11px] text-muted-foreground/70 italic whitespace-nowrap">
-        {text}
-      </span>
-      <span className="h-px w-12 bg-muted-foreground/20" />
-    </div>
-  );
-}
-
-// ── Position helpers ───────────────────────────────────
-
-// For N nodes with justify-around, center of node i in 0-1000 viewBox
-function aroundPositions(n: number): number[] {
-  return Array.from({ length: n }, (_, i) => ((i + 0.5) / n) * 1000);
 }
 
 // ── Main Flow View ─────────────────────────────────────
