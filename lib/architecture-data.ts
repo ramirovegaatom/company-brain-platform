@@ -248,6 +248,36 @@ export const DATA_SOURCES: SourceNode[] = [
       "Reuses Adoption Intelligence credentials",
     ],
   },
+  {
+    id: "intercom",
+    name: "Intercom",
+    icon: MessageSquare,
+    status: "active",
+    description: "Support conversations — tickets, CSAT, churn alerts, sentiment",
+    category: "adapter",
+    capabilities: ["GENERATE_SIGNALS"],
+    signalSubtypes: [
+      { name: "high_ticket_volume", score: -4 },
+      { name: "slow_first_reply", score: -3 },
+      { name: "slow_resolution", score: -4 },
+      { name: "churn_alert_flagged", score: -8 },
+      { name: "escalation_spike", score: -5 },
+      { name: "negative_sentiment_support", score: -3 },
+      { name: "high_ai_resolution", score: 3 },
+      { name: "positive_csat", score: 4 },
+    ],
+    stats: {
+      "Conversations": "241",
+      "Companies matched": "86",
+    },
+    details: [
+      "API: api.intercom.io (Bearer token, v2.11)",
+      "Workspace: Atom (mr1xfx3a), 12,290 companies",
+      "Custom attrs: Categoría, Módulo Afectado, Sentiment, Alerta de Churn",
+      "CSAT ratings, Fin AI resolution tracking, escalation tags",
+      "Entity matching via company name → entity_resolver",
+    ],
+  },
 ];
 
 export const KNOWLEDGE_SOURCES: SourceNode[] = [
@@ -307,15 +337,6 @@ export const PLANNED_SOURCES: SourceNode[] = [
     category: "adapter",
     details: ["Contacts, deals, buying roles from Attio CRM", "Waiting for API credentials from Marcos"],
   },
-  {
-    id: "intercom",
-    name: "Intercom",
-    icon: MessageSquare,
-    status: "planned",
-    description: "Support tickets — replacing HubSpot tickets (~Apr/May 2026)",
-    category: "adapter",
-    details: ["Real-time ticket signals + incremental KB feeding", "When migration from HubSpot completes"],
-  },
 ];
 
 // ── Central Database ───────────────────────────────────
@@ -330,7 +351,7 @@ export const CENTRAL_DATABASE: SourceNode = {
   stats: {
     "Tables": "30+",
     "Clients": "1,418",
-    "Signals": "~2,100",
+    "Signals": "~2,400",
     "KB Entries": "182",
     "Call Summaries": "2,429",
     "Similarity Pairs": "44,058",
@@ -458,8 +479,8 @@ export const INGESTION_STEPS = [
 
 export const SUMMARY_STATS = {
   activeSources: DATA_SOURCES.length + KNOWLEDGE_SOURCES.length,
-  totalClients: 1000,
-  totalSignals: "~2,100",
+  totalClients: 1418,
+  totalSignals: "~2,400",
   kbEntries: 182,
   syncSchedule: "Daily 9AM ART",
 };

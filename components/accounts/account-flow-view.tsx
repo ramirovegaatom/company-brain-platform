@@ -43,6 +43,10 @@ const SOURCES = [
     const c = m.conv_logs_total_30d;
     return c ? `${Number(c).toLocaleString()} convs` : undefined;
   }},
+  { id: "intercom", color: "purple" as const, statFn: (m: Record<string, unknown>) => {
+    const c = m.intercom_convs_30d;
+    return c ? `${c} tickets` : undefined;
+  }},
 ];
 
 const PROCESSING = [

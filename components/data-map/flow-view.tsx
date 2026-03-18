@@ -52,7 +52,7 @@ export function FlowView({ selectedId, onSelect }: FlowViewProps) {
 
         {/* ── Connector: sources → supabase ── */}
         <FlowConnector fromXs={srcXs} toXs={[500]} height={70} />
-        <FlowLabel text="5 adapters · daily sync 9AM ART" />
+        <FlowLabel text="7 adapters · daily sync 9AM ART" />
 
         {/* ── Row 2: Knowledge → Supabase ← Stub/Planned ── */}
         <div className="grid grid-cols-[200px_1fr_200px] items-center gap-2 px-4 py-2">

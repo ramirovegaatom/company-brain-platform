@@ -30,6 +30,7 @@ const SRC = {
   labs: "text-teal-400",
   conv_logs: "text-emerald-400",
   hubspot_kb: "text-orange-400",
+  intercom: "text-rose-400",
   computed: "text-muted-foreground",
 };
 
@@ -43,6 +44,7 @@ const MODJO_CALLS = { project: "atom-ai-playground", dataset: "company_insights"
 const LABS_TABLE = { project: "atom-ai-labs-ad1fa", dataset: "conversational_ai_lab", table: "first_30_messages_last_30_days" };
 const CONV_LOGS = { project: "atom-ai-playground", dataset: "company_insights", table: "conversation_logs_history" };
 const VITALLY_API = { apiEndpoint: "https://atomchat.rest.vitally.io/resources" };
+const INTERCOM_API = { apiEndpoint: "https://api.intercom.io", notes: "Workspace: Atom (mr1xfx3a)" };
 
 export const FIELD_SOURCES: FieldSource[] = [
   // ── Info Core ──
@@ -106,6 +108,18 @@ export const FIELD_SOURCES: FieldSource[] = [
   { field: "avg_call_duration_min", label: "Avg Duration (min)", source: "Modjo", sourceKey: "modjo", sourceColor: SRC.modjo, category: "calls", sourceDetail: { ...MODJO_CALLS, column: "duration", notes: "FLOAT seconds → minutes" } },
   { field: "avg_ai_call_score", label: "AI Call Score", source: "Modjo", sourceKey: "modjo", sourceColor: SRC.modjo, category: "calls", sourceDetail: { ...MODJO_CALLS, notes: "relations_aiScoringResults[].score (0-100)" } },
   { field: "call_themes_detected", label: "Call Themes", source: "Modjo", sourceKey: "modjo", sourceColor: SRC.modjo, category: "calls", sourceDetail: { ...MODJO_CALLS, notes: "Keyword detection from call_summaries.detected_themes" } },
+
+  // ── Support (Intercom) ──
+  { field: "intercom_convs_30d", label: "Support Convs (30d)", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "POST /conversations/search (30d window)" } },
+  { field: "intercom_open_convs", label: "Open Conversations", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "state=open count" } },
+  { field: "intercom_avg_first_reply_sec", label: "Avg First Reply (sec)", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "statistics.time_to_admin_reply" } },
+  { field: "intercom_avg_resolution_sec", label: "Avg Resolution (sec)", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "statistics.time_to_first_close" } },
+  { field: "intercom_escalation_count", label: "Escalations", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "Tag: Escalado" } },
+  { field: "intercom_churn_alerts", label: "Churn Alerts", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "custom_attr: Alerta de Churn/Insatisfacción" } },
+  { field: "intercom_top_modules", label: "Top Modules Affected", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "custom_attr: Módulo Afectado" } },
+  { field: "intercom_ai_resolution_pct", label: "AI Resolution %", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "resolution_state + ai_agent_participated" } },
+  { field: "intercom_csat_avg", label: "CSAT Average", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "conversation_rating.rating (1-5)" } },
+  { field: "intercom_sentiment_distribution", label: "Sentiment Distribution", source: "Intercom", sourceKey: "intercom", sourceColor: SRC.intercom, category: "experience", sourceDetail: { ...INTERCOM_API, notes: "custom_attr: Sentiment" } },
 ];
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -117,10 +131,10 @@ export const CATEGORY_LABELS: Record<string, string> = {
   calls: "Calls (Modjo)",
 };
 
-export const CATEGORY_ORDER = ["info_core", "usage", "campaigns", "conversations", "calls"];
+export const CATEGORY_ORDER = ["info_core", "usage", "campaigns", "conversations", "calls", "experience"];
 
 // ── Source-level aggregation keys (matches adapter names) ──
-export const SOURCE_KEYS = ["vitally", "bigquery", "adoption", "modjo", "labs", "conv_logs", "computed"] as const;
+export const SOURCE_KEYS = ["vitally", "bigquery", "adoption", "modjo", "labs", "conv_logs", "intercom", "computed"] as const;
 export type SourceKey = (typeof SOURCE_KEYS)[number];
 
 export const SOURCE_LABELS: Record<string, string> = {
@@ -130,6 +144,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   modjo: "Modjo Calls",
   labs: "Labs Conversations",
   conv_logs: "Conversation Logs",
+  intercom: "Intercom",
   computed: "Computed",
 };
 
@@ -145,6 +160,7 @@ export const SIGNAL_SOURCE_MAP: Record<string, string> = {
   modjo: "modjo",
   labs: "labs",
   conversation_logs: "conv_logs",
+  intercom: "intercom",
 };
 
 // ── Helpers ──
