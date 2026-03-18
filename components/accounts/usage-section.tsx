@@ -26,7 +26,6 @@ export function UsageSection({ metadata }: UsageSectionProps) {
   const planConvs = getNum(metadata, "plan_conversaciones");
   const currentConvs = getNum(metadata, "conversaciones_actuales");
   const utilization = getNum(metadata, "conversaciones_actuales_vs_plan");
-  const prevMonth = getNum(metadata, "consumo_mes_anterior_porcentaje");
   const projectedRevenue = getNum(metadata, "revenue_proyectado");
   const convStarted = getNum(metadata, "conversations_started");
   const abandonment = getNum(metadata, "tasa_abandono");
@@ -86,9 +85,6 @@ export function UsageSection({ metadata }: UsageSectionProps) {
               </div>
             </div>
           </>
-        )}
-        {prevMonth !== null && (
-          <StatRow label="Consumo mes anterior" value={formatPercent(prevMonth)} />
         )}
         {projectedRevenue !== null && (
           <StatRow label="Revenue proyectado" value={formatMoney(projectedRevenue)} />

@@ -38,7 +38,6 @@ export function KpiHeroBar({ client, healthTrend }: KpiHeroBarProps) {
   const health = client.health_score;
 
   const utilization = getNum(meta, "conversaciones_actuales_vs_plan");
-  const prevMonth = getNum(meta, "consumo_mes_anterior_porcentaje");
   const calls30d = getNum(meta, "total_calls_30d");
 
   // Calculate utilization from raw fields if ratio not available
@@ -47,7 +46,7 @@ export function KpiHeroBar({ client, healthTrend }: KpiHeroBarProps) {
   const calculatedUtil = planConvs && planConvs > 0 && actualConvs !== null
     ? actualConvs / planConvs
     : null;
-  const effectiveUtil = utilization ?? calculatedUtil ?? prevMonth;
+  const effectiveUtil = utilization ?? calculatedUtil;
 
   const trendLabel = healthTrend === "improving" ? "improving" : healthTrend === "declining" ? "declining" : "stable";
   const healthColors = getHealthColor(health);
@@ -67,7 +66,6 @@ export function KpiHeroBar({ client, healthTrend }: KpiHeroBarProps) {
         sub={
           utilization !== null ? undefined
           : calculatedUtil !== null ? `${formatNumber(actualConvs)} / ${formatNumber(planConvs)}`
-          : prevMonth !== null ? "prev month"
           : undefined
         }
         colorClass={
