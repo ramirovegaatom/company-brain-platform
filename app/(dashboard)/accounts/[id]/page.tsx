@@ -9,10 +9,11 @@ import { ContextCardView } from "@/components/accounts/context-card-view";
 import { SignalsList } from "@/components/accounts/signals-list";
 import { PatternMatches } from "@/components/accounts/pattern-matches";
 import { ContactsList } from "@/components/accounts/contacts-list";
-import { UsageSection } from "@/components/accounts/usage-section";
+import { OverviewSection } from "@/components/accounts/overview-section";
 import { AdoptionSnapshot } from "@/components/accounts/adoption-snapshot";
 import { CampaignTable } from "@/components/accounts/campaign-table";
 import { ConversationMetrics } from "@/components/accounts/conversation-metrics";
+import { DealsList } from "@/components/accounts/deals-list";
 import { CallHistory } from "@/components/accounts/call-history";
 import { SupportHistory } from "@/components/accounts/support-history";
 import { AccountDataMap } from "@/components/accounts/account-data-map";
@@ -33,18 +34,22 @@ export default function AccountDetailPage({
     callSummaries,
     healthBreakdown,
     supportData,
+    dealsData,
     isLoading,
     isLoadingContext,
     isLoadingCalls,
     isLoadingHealth,
     isLoadingSupport,
+    isLoadingDeals,
     contextError,
     callsError,
     supportError,
+    dealsError,
     error,
     retryContext,
     loadCallSummaries,
     loadSupport,
+    loadDeals,
   } = useClientDetail(id);
 
   if (error) {
@@ -72,6 +77,9 @@ export default function AccountDetailPage({
     );
   }
 
+  const meta = client.metadata || {};
+  const dealCount = meta.crm_associated_deals as string | undefined;
+
   return (
     <div className="space-y-6">
       <ClientHeader
@@ -90,16 +98,20 @@ export default function AccountDetailPage({
         onValueChange={(value) => {
           if (value === "calls") loadCallSummaries();
           if (value === "support") loadSupport();
+          if (value === "deals") loadDeals();
         }}
       >
         <TabsList>
           <TabsTrigger value="intelligence">Intelligence</TabsTrigger>
-          <TabsTrigger value="operations">Operations</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="deals">
+            Deals{dealCount ? ` (${dealCount})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="support">
-            Support{client.metadata?.intercom_convs_30d ? ` (${client.metadata.intercom_convs_30d})` : ""}
+            Support{meta.intercom_convs_30d ? ` (${meta.intercom_convs_30d})` : ""}
           </TabsTrigger>
           <TabsTrigger value="calls">
-            Calls{client.metadata?.total_calls_30d ? ` (${client.metadata.total_calls_30d})` : ""}
+            Calls{meta.total_calls_30d ? ` (${meta.total_calls_30d})` : ""}
           </TabsTrigger>
           <TabsTrigger value="signals">
             Signals{signals.length > 0 ? ` (${signals.length})` : ""}
@@ -125,13 +137,21 @@ export default function AccountDetailPage({
           )}
         </TabsContent>
 
-        <TabsContent value="operations" className="space-y-4 mt-4">
+        <TabsContent value="overview" className="space-y-4 mt-4">
+          <OverviewSection metadata={meta} mrr={client.mrr} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <UsageSection metadata={client.metadata || {}} />
-            <AdoptionSnapshot metadata={client.metadata || {}} />
+            <AdoptionSnapshot metadata={meta} />
+            <ConversationMetrics metadata={meta} />
           </div>
-          <CampaignTable metadata={client.metadata || {}} />
-          <ConversationMetrics metadata={client.metadata || {}} />
+          <CampaignTable metadata={meta} />
+        </TabsContent>
+
+        <TabsContent value="deals" className="mt-4">
+          <DealsList
+            data={dealsData}
+            isLoading={isLoadingDeals}
+            error={dealsError}
+          />
         </TabsContent>
 
         <TabsContent value="support" className="mt-4">

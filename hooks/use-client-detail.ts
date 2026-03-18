@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Client, Signal, Contact, ContextCard, CallSummary, HealthBreakdown, SupportSummary } from "@/lib/types";
-import { getClient, getClients, getClientSignals, getClientContacts, getClientContext, getClientCallSummaries, getClientHealth, getClientSupport } from "@/lib/api";
+import type { Client, Signal, Contact, ContextCard, CallSummary, HealthBreakdown, SupportSummary, DealsResponse } from "@/lib/types";
+import { getClient, getClients, getClientSignals, getClientContacts, getClientContext, getClientCallSummaries, getClientHealth, getClientSupport, getClientDeals } from "@/lib/api";
 
 interface UseClientDetailResult {
   client: Client | null;
@@ -12,18 +12,22 @@ interface UseClientDetailResult {
   callSummaries: CallSummary[];
   healthBreakdown: HealthBreakdown | null;
   supportData: SupportSummary | null;
+  dealsData: DealsResponse | null;
   isLoading: boolean;
   isLoadingContext: boolean;
   isLoadingCalls: boolean;
   isLoadingHealth: boolean;
   isLoadingSupport: boolean;
+  isLoadingDeals: boolean;
   contextError: string | null;
   callsError: string | null;
   supportError: string | null;
+  dealsError: string | null;
   error: string | null;
   retryContext: () => void;
   loadCallSummaries: () => void;
   loadSupport: () => void;
+  loadDeals: () => void;
 }
 
 export function useClientDetail(clientId: string): UseClientDetailResult {
@@ -46,6 +50,10 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
   const [contextRetry, setContextRetry] = useState(0);
   const [callsRequested, setCallsRequested] = useState(false);
   const [supportRequested, setSupportRequested] = useState(false);
+  const [dealsData, setDealsData] = useState<DealsResponse | null>(null);
+  const [isLoadingDeals, setIsLoadingDeals] = useState(false);
+  const [dealsError, setDealsError] = useState<string | null>(null);
+  const [dealsRequested, setDealsRequested] = useState(false);
 
   // Fast path: client + signals + contacts in parallel
   useEffect(() => {
@@ -213,6 +221,35 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
     };
   }, [clientId, supportRequested]);
 
+  // Lazy path: deals (loaded on demand when Deals tab is opened)
+  useEffect(() => {
+    if (!dealsRequested) return;
+
+    let cancelled = false;
+    setIsLoadingDeals(true);
+    setDealsError(null);
+
+    const controller = new AbortController();
+
+    getClientDeals(clientId, { signal: controller.signal })
+      .then((data) => {
+        if (!cancelled) setDealsData(data);
+      })
+      .catch((err) => {
+        if (!cancelled && err.name !== "AbortError") {
+          setDealsError(err.message);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingDeals(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [clientId, dealsRequested]);
+
   const loadCallSummaries = useCallback(() => {
     if (!callsRequested) setCallsRequested(true);
   }, [callsRequested]);
@@ -220,6 +257,10 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
   const loadSupport = useCallback(() => {
     if (!supportRequested) setSupportRequested(true);
   }, [supportRequested]);
+
+  const loadDeals = useCallback(() => {
+    if (!dealsRequested) setDealsRequested(true);
+  }, [dealsRequested]);
 
   return {
     client,
@@ -229,17 +270,21 @@ export function useClientDetail(clientId: string): UseClientDetailResult {
     callSummaries,
     healthBreakdown,
     supportData,
+    dealsData,
     isLoading,
     isLoadingContext,
     isLoadingCalls,
     isLoadingHealth,
     isLoadingSupport,
+    isLoadingDeals,
     contextError,
     callsError,
     supportError,
+    dealsError,
     error,
     retryContext: () => setContextRetry((n) => n + 1),
     loadCallSummaries,
     loadSupport,
+    loadDeals,
   };
 }

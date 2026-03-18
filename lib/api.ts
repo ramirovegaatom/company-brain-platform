@@ -1,4 +1,4 @@
-import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse, CallSummariesResponse, ChatQueryRequest, ChatQueryResponse, DashboardSummary, HealthBreakdown, SupportSummary } from "./types";
+import type { Client, ClientListResponse, ContextCard, SignalsResponse, ContactsResponse, CallSummariesResponse, ChatQueryRequest, ChatQueryResponse, DashboardSummary, HealthBreakdown, SupportSummary, DealsResponse } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -114,6 +114,15 @@ export function getClientSupport(
   if (options?.limit) params.set("limit", String(options.limit));
   const qs = params.toString();
   return fetchApi(`/api/v1/clients/${id}/support${qs ? `?${qs}` : ""}`, {
+    signal: options?.signal,
+  });
+}
+
+export function getClientDeals(
+  id: string,
+  options?: { signal?: AbortSignal }
+): Promise<DealsResponse> {
+  return fetchApi(`/api/v1/clients/${id}/deals`, {
     signal: options?.signal,
   });
 }

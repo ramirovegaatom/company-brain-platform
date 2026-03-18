@@ -222,6 +222,32 @@ export interface HealthBreakdown {
   top_positive_factors: HealthFactor[];
 }
 
+// CRM Deals
+export interface Deal {
+  id: string;
+  client_id: string;
+  deal_name: string;
+  stage: string | null;
+  value: number | null;
+  currency: string;
+  owner: string | null;
+  assigned_bdr: string | null;
+  close_date: string | null;
+  source_system: string | null;
+  record_id: string | null;
+  spiced_data: Record<string, string>;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DealsResponse {
+  deals: Deal[];
+  total: number;
+  active: number;
+  total_pipeline_value: number;
+}
+
 // Dashboard types
 export interface HealthBucket {
   label: string;
