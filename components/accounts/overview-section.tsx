@@ -17,7 +17,7 @@ import {
   Database,
 } from "lucide-react";
 import { getNum, formatNumber, formatPercent, formatMoney } from "@/lib/metadata-utils";
-import { FIELD_SOURCES, type FieldSource } from "@/lib/field-sources";
+import { FIELD_SOURCES, METRIC_THRESHOLDS, type FieldSource } from "@/lib/field-sources";
 import { cn } from "@/lib/utils";
 
 interface OverviewSectionProps {
@@ -37,23 +37,30 @@ function SourceTooltipContent({ field }: { field: string }) {
 
   const d = src.sourceDetail;
   return (
-    <div className="space-y-1 max-w-xs">
+    <div className="space-y-1.5 max-w-xs">
       <div className="font-medium">{src.label}</div>
-      <div className={cn("text-xs", src.sourceColor)}>
-        {src.source}
-      </div>
-      {d.project && (
-        <div className="text-xs opacity-80">
-          {d.project}.{d.dataset}.{d.table}
-          {d.column && <span className="opacity-60"> → {d.column}</span>}
+      {src.meaning && (
+        <div className="text-xs text-muted-foreground leading-relaxed">
+          {src.meaning}
         </div>
       )}
-      {d.apiEndpoint && (
-        <div className="text-xs opacity-80">{d.apiEndpoint}</div>
-      )}
-      {d.notes && (
-        <div className="text-xs opacity-60 italic">{d.notes}</div>
-      )}
+      <div className="border-t border-border/50 pt-1.5">
+        <div className={cn("text-xs", src.sourceColor)}>
+          {src.source}
+        </div>
+        {d.project && (
+          <div className="text-xs opacity-80">
+            {d.project}.{d.dataset}.{d.table}
+            {d.column && <span className="opacity-60"> → {d.column}</span>}
+          </div>
+        )}
+        {d.apiEndpoint && (
+          <div className="text-xs opacity-80">{d.apiEndpoint}</div>
+        )}
+        {d.notes && (
+          <div className="text-xs opacity-60 italic">{d.notes}</div>
+        )}
+      </div>
     </div>
   );
 }
@@ -64,16 +71,25 @@ function StatRow({
   sub,
   alert,
   field,
+  rawValue,
 }: {
   label: string;
   value: string | null;
   sub?: string;
   alert?: boolean;
   field?: string; // metadata field name for source lookup
+  rawValue?: number | null; // numeric value for threshold color-coding
 }) {
   if (value === null || value === undefined || value === "—") return null;
 
   const hasSrc = field && FIELD_MAP.has(field);
+
+  // A2: Threshold-based color-coding
+  let thresholdColor: string | null = null;
+  if (!alert && field && rawValue !== null && rawValue !== undefined) {
+    const fn = METRIC_THRESHOLDS[field];
+    if (fn) thresholdColor = fn(rawValue);
+  }
 
   const labelEl = (
     <span className={cn(
@@ -102,7 +118,11 @@ function StatRow({
         labelEl
       )}
       <div className="text-right">
-        <span className={cn("text-sm font-medium", alert && "text-red-400")}>
+        <span className={cn(
+          "text-sm font-medium",
+          alert && "text-red-400",
+          !alert && thresholdColor,
+        )}>
           {value}
         </span>
         {sub && (
@@ -238,7 +258,7 @@ export function OverviewSection({ metadata, mrr }: OverviewSectionProps) {
                 />
               )}
               {facturasVencidas !== null && facturasVencidas === 0 && (
-                <StatRow label="Facturas Vencidas" value="0" sub="al dia" field="facturas_vencidas" />
+                <StatRow label="Facturas Vencidas" value="0" sub="al dia" field="facturas_vencidas" rawValue={0} />
               )}
               {periodEnds && (
                 <StatRow label="Fin Periodo Actual" value={periodEnds} field="current_period_ends_at" />
@@ -274,7 +294,7 @@ export function OverviewSection({ metadata, mrr }: OverviewSectionProps) {
           )}
           {utilizationPct !== null && (
             <>
-              <StatRow label="Utilizacion" value={`${utilizationPct.toFixed(0)}%`} field="conversaciones_actuales_vs_plan" />
+              <StatRow label="Utilizacion" value={`${utilizationPct.toFixed(0)}%`} field="conversaciones_actuales_vs_plan" rawValue={utilization} />
               <div className="space-y-1 pb-1">
                 <Progress value={Math.min(utilizationPct, 100)} className="h-2" />
                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -292,16 +312,17 @@ export function OverviewSection({ metadata, mrr }: OverviewSectionProps) {
               label="Utilizacion 3M"
               value={formatPercent(util3m <= 1 ? util3m : util3m / 100)}
               field="conversaciones_vs_plan_3m"
+              rawValue={util3m}
             />
           )}
           {projectedRevenue !== null && (
             <StatRow label="Revenue Proy." value={formatMoney(projectedRevenue)} field="revenue_proyectado" />
           )}
           {abandonment !== null && (
-            <StatRow label="Tasa Abandono" value={formatPercent(abandonment)} field="tasa_abandono" />
+            <StatRow label="Tasa Abandono" value={formatPercent(abandonment)} field="tasa_abandono" rawValue={abandonment} />
           )}
           {nds !== null && (
-            <StatRow label="NDS" value={formatPercent(nds)} field="nds_pct" />
+            <StatRow label="NDS" value={formatPercent(nds)} field="nds_pct" rawValue={nds} />
           )}
           {activeUsers !== null && (
             <StatRow label="Usuarios Activos" value={formatNumber(activeUsers)} field="total_active_users" />

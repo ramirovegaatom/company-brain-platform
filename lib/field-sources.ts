@@ -19,7 +19,49 @@ export interface FieldSource {
   sourceColor: string;
   category: "info_core" | "usage" | "experience" | "conversations" | "campaigns" | "calls" | "finance" | "crm";
   sourceDetail: SourceDetail;
+  meaning?: string;
 }
+
+// Threshold-based color coding for metric values.
+// Each entry maps a field name to a function that returns a Tailwind text color class.
+// null = default (no color override).
+export type ThresholdFn = (value: number) => string | null;
+
+export const METRIC_THRESHOLDS: Record<string, ThresholdFn> = {
+  tasa_abandono: (v) => {
+    const pct = v <= 1 ? v * 100 : v;
+    if (pct > 30) return "text-red-400";
+    if (pct > 15) return "text-amber-400";
+    return "text-emerald-400";
+  },
+  nds_pct: (v) => {
+    const pct = v <= 1 ? v * 100 : v;
+    if (pct < 50) return "text-red-400";
+    if (pct < 80) return "text-amber-400";
+    return "text-emerald-400";
+  },
+  facturas_vencidas: (v) => (v > 0 ? "text-red-400" : "text-emerald-400"),
+  monto_facturas_vencidas: (v) => (v > 0 ? "text-red-400" : null),
+  conversaciones_actuales_vs_plan: (v) => {
+    const pct = v <= 1 ? v * 100 : v;
+    if (pct < 30) return "text-red-400";
+    if (pct < 50) return "text-amber-400";
+    if (pct <= 100) return "text-emerald-400";
+    return "text-amber-400"; // over 100% = excess
+  },
+  conversaciones_vs_plan_3m: (v) => {
+    const pct = v <= 1 ? v * 100 : v;
+    if (pct < 30) return "text-red-400";
+    if (pct < 50) return "text-amber-400";
+    if (pct <= 100) return "text-emerald-400";
+    return "text-amber-400";
+  },
+  health_score: (v) => {
+    if (v < 30) return "text-red-400";
+    if (v < 60) return "text-amber-400";
+    return "text-emerald-400";
+  },
+};
 
 // Source colors (consistent with data map)
 const SRC = {
@@ -55,50 +97,50 @@ const INTERCOM_API = { apiEndpoint: "https://api.intercom.io", notes: "Workspace
 
 export const FIELD_SOURCES: FieldSource[] = [
   // ── Info Core ──
-  { field: "mrr", label: "MRR", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "total_mrr" } },
-  { field: "plan", label: "Plan", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "info_core", sourceDetail: { ...HUB_INSIGHTS, column: "plan" } },
+  { field: "mrr", label: "MRR", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "total_mrr" }, meaning: "Monthly Recurring Revenue del cliente. Monto mensual facturado por suscripción activa." },
+  { field: "plan", label: "Plan", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "info_core", sourceDetail: { ...HUB_INSIGHTS, column: "plan" }, meaning: "Plan contratado por el cliente. Define SLAs, features disponibles y límites de consumo." },
   { field: "industry", label: "Industry", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "info_core", sourceDetail: { ...HUB_INSIGHTS, column: "industry" } },
-  { field: "lifecycle_stage", label: "Lifecycle Stage", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "lifecycle_stage" } },
+  { field: "lifecycle_stage", label: "Lifecycle Stage", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "lifecycle_stage" }, meaning: "Etapa del journey del cliente: Onboarding, Active, At Risk, Churned, etc." },
   { field: "country", label: "Country", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "info_core", sourceDetail: { ...HUB_INSIGHTS, column: "country" } },
   { field: "equipo_ongoing", label: "Equipo Ongoing", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "info_core", sourceDetail: { ...HUB_INSIGHTS, column: "equipo_ongoing" } },
   { field: "equipo_ongoing_propietario", label: "Equipo Propietario", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "equipo_ongoing_propietario" } },
   { field: "assigned_csm", label: "CSM Asignado", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "assigned_csm" } },
   { field: "assigned_ae", label: "AE Asignado", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "assigned_ae" } },
-  { field: "revenue_proyectado", label: "Revenue Proyectado", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "revenue_proyectado" } },
-  { field: "health_score", label: "Health Score", source: "Computed", sourceKey: "computed", sourceColor: SRC.computed, category: "info_core", sourceDetail: { notes: "Calculated by health_scoring.py from signals + patterns" } },
-  { field: "icp_tier", label: "ICP Tier", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "icp_tier" } },
+  { field: "revenue_proyectado", label: "Revenue Proyectado", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "revenue_proyectado" }, meaning: "Ingreso mensual proyectado incluyendo excedentes estimados sobre el plan base." },
+  { field: "health_score", label: "Health Score", source: "Computed", sourceKey: "computed", sourceColor: SRC.computed, category: "info_core", sourceDetail: { notes: "Calculated by health_scoring.py from signals + patterns" }, meaning: "Score compuesto (0-100) calculado desde señales + patrones. <30 crítico, 30-60 at risk, >60 estable." },
+  { field: "icp_tier", label: "ICP Tier", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "icp_tier" }, meaning: "Segmentación por Ideal Customer Profile. Define nivel de atención y prioridad." },
   { field: "partner_name", label: "Partner", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "partner_name" } },
-  { field: "contexto_empresa", label: "Business Context", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "contexto_de_la_empresa_y_modelo_de_negocio" } },
+  { field: "contexto_empresa", label: "Business Context", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "info_core", sourceDetail: { ...HUB_VITALLY, column: "contexto_de_la_empresa_y_modelo_de_negocio" }, meaning: "Descripción del modelo de negocio y contexto operativo del cliente." },
 
   // ── Usage / Consumo ──
-  { field: "plan_conversaciones", label: "Plan (Convs Contratadas)", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "usage", sourceDetail: { ...HUB_VITALLY, column: "plan_conversations" } },
-  { field: "conversaciones_actuales", label: "Convs Actuales", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "usage", sourceDetail: { ...HUB_VITALLY, column: "conversaciones_actuales" } },
-  { field: "conversaciones_actuales_vs_plan", label: "Utilization %", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "usage", sourceDetail: { ...HUB_VITALLY, column: "conversaciones_actuales_vs_plan" } },
-  { field: "conversaciones_vs_plan_3m", label: "Utilization 3M %", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "usage", sourceDetail: { ...HUB_VITALLY, column: "conversaciones_vs_plan_3m" } },
-  { field: "conversations_started", label: "Convs Started (Daily)", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "conversations_started" } },
-  { field: "tasa_abandono", label: "Tasa Abandono", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "tasa_abandono" } },
-  { field: "nds_pct", label: "NDS (Nivel Servicio)", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "nds_pct" } },
-  { field: "total_active_users", label: "Usuarios Activos", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "total_active_users" } },
+  { field: "plan_conversaciones", label: "Plan (Convs Contratadas)", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "usage", sourceDetail: { ...HUB_VITALLY, column: "plan_conversations" }, meaning: "Cantidad de conversaciones contratadas en el plan mensual." },
+  { field: "conversaciones_actuales", label: "Convs Actuales", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "usage", sourceDetail: { ...HUB_VITALLY, column: "conversaciones_actuales" }, meaning: "Conversaciones consumidas en el mes actual." },
+  { field: "conversaciones_actuales_vs_plan", label: "Utilization %", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "usage", sourceDetail: { ...HUB_VITALLY, column: "conversaciones_actuales_vs_plan" }, meaning: "Ratio consumo actual vs plan contratado. <30% subutilización crítica, <50% riesgo, 50-100% saludable, >100% excedente." },
+  { field: "conversaciones_vs_plan_3m", label: "Utilization 3M %", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "usage", sourceDetail: { ...HUB_VITALLY, column: "conversaciones_vs_plan_3m" }, meaning: "Tendencia de utilización últimos 3 meses. Declive sostenido indica riesgo de churn por subutilización." },
+  { field: "conversations_started", label: "Convs Started (Daily)", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "conversations_started" }, meaning: "Conversaciones iniciadas en el snapshot diario más reciente." },
+  { field: "tasa_abandono", label: "Tasa Abandono", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "tasa_abandono" }, meaning: "% de conversaciones donde el usuario se fue sin ser atendido. <15% bueno, >30% crítico." },
+  { field: "nds_pct", label: "NDS (Nivel Servicio)", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "nds_pct" }, meaning: "Nivel de Servicio: % de conversaciones atendidas dentro del SLA. <50% crítico, <80% atención, >80% bueno." },
+  { field: "total_active_users", label: "Usuarios Activos", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "total_active_users" }, meaning: "Usuarios que han interactuado con la plataforma en el periodo. Caída indica desadopción." },
   { field: "total_agent_users", label: "Agent Users", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "total_agent_users" } },
-  { field: "templates_sended", label: "Templates Enviados", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "templates_sended" } },
-  { field: "total_ai_cost", label: "AI Cost (USD)", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "total_ai_cost" } },
+  { field: "templates_sended", label: "Templates Enviados", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "templates_sended" }, meaning: "Templates de WhatsApp enviados. Indicador de actividad outbound del cliente." },
+  { field: "total_ai_cost", label: "AI Cost (USD)", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "total_ai_cost" }, meaning: "Costo en USD del consumo de IA del cliente. Mayor costo = mayor adopción de features AI." },
   { field: "total_tokens", label: "AI Tokens", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "total_tokens" } },
-  { field: "bots_conectados", label: "Bots Conectados", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "bots_conectados" } },
+  { field: "bots_conectados", label: "Bots Conectados", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "bots_conectados" }, meaning: "Bots activos configurados por el cliente. 0 = no usa automatización." },
   { field: "bots_flowbuilder_conectados", label: "FlowBuilder Bots", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "bots_flowbuilder_conectados" } },
   { field: "wa_flows_sended", label: "WA Flows Enviados", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "wa_flows_sended" } },
   { field: "outbound_bot_calls", label: "Outbound Bot Calls", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "outbound_bot_calls" } },
   { field: "ctwa_convs", label: "Click-to-WA Convs", source: "Atom Hub", sourceKey: "atom_hub", sourceColor: SRC.atom_hub, category: "usage", sourceDetail: { ...HUB_INSIGHTS, column: "ctwa_convs" } },
 
   // ── Finance (NEW) ──
-  { field: "facturado_plan", label: "Facturado Plan", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "facturado_plan" } },
-  { field: "facturado_excedente_mes_anterior", label: "Excedente Mes Anterior", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "facturado_excedente_mes_anterior" } },
-  { field: "costo_de_excedentes", label: "Costo Excedentes", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "costo_de_excedentes" } },
+  { field: "facturado_plan", label: "Facturado Plan", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "facturado_plan" }, meaning: "Monto facturado por el plan base del cliente en el periodo actual." },
+  { field: "facturado_excedente_mes_anterior", label: "Excedente Mes Anterior", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "facturado_excedente_mes_anterior" }, meaning: "Monto facturado por excedente de consumo del mes anterior. >0 = oportunidad de upsell al siguiente plan." },
+  { field: "costo_de_excedentes", label: "Costo Excedentes", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "costo_de_excedentes" }, meaning: "Costo unitario de cada conversación excedente sobre el plan contratado." },
   { field: "MRR_proy_excedente", label: "MRR Proy. Excedente", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "MRR_proy_excedente" } },
-  { field: "facturas_vencidas", label: "Facturas Vencidas", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "facturas_vencidas" } },
-  { field: "monto_facturas_vencidas", label: "Monto Fact. Vencidas", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "monto_facturas_vencidas" } },
-  { field: "current_period_ends_at", label: "Fin Periodo Actual", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "current_period_ends_at" } },
-  { field: "churn_razon", label: "Churn Reason", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "churn_razon" } },
-  { field: "churn_oportunidades_de_mejora", label: "Churn Oportunidades", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "churn_oportunidades_de_mejora_atom" } },
+  { field: "facturas_vencidas", label: "Facturas Vencidas", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "facturas_vencidas" }, meaning: "Cantidad de facturas impagas pasadas de due date. >0 requiere acción inmediata de cobranza." },
+  { field: "monto_facturas_vencidas", label: "Monto Fact. Vencidas", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "monto_facturas_vencidas" }, meaning: "Monto total en USD de facturas vencidas. Indicador de riesgo financiero y posible churn." },
+  { field: "current_period_ends_at", label: "Fin Periodo Actual", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "current_period_ends_at" }, meaning: "Fecha de vencimiento del periodo de suscripción actual. Requiere acción de renewal pre-vencimiento." },
+  { field: "churn_razon", label: "Churn Reason", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "churn_razon" }, meaning: "Motivo documentado de churn o riesgo de churn del cliente." },
+  { field: "churn_oportunidades_de_mejora", label: "Churn Oportunidades", source: "Vitally CSM", sourceKey: "vitally_csm", sourceColor: SRC.vitally_csm, category: "finance", sourceDetail: { ...HUB_VITALLY, column: "churn_oportunidades_de_mejora_atom" }, meaning: "Oportunidades de mejora identificadas que podrían prevenir el churn." },
 
   // ── CRM (NEW) ──
   { field: "crm_icp_tier", label: "ICP Tier (CRM)", source: "CRM Hub", sourceKey: "crm_hub", sourceColor: SRC.crm_hub, category: "crm", sourceDetail: { ...HUB_CRM_CO, column: "icp_tier" } },
